@@ -131,11 +131,6 @@ class IGAD(mesa.Model):
             
             household.receive_flood(flood_value)
 
-    def end_step(self):
-        """ 
-        notify nothing happened
-        """        
-        [agent.end_step() for agent in self.agents]       
 
 
     def step(self):
@@ -151,7 +146,7 @@ class IGAD(mesa.Model):
             events = self.events[self.steps]
             self.do_flood(events)
         
-        self.end_step()
+        
 
         self.schedule.step()
 

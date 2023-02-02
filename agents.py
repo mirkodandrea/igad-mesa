@@ -56,13 +56,9 @@ class HouseholdAgent(mg.GeoAgent):
 
 
 
-    def step(self):
-        """Advance one step."""
-        pass
-        # self.model.counts[self.atype] += 1  # Count agent type
 
     def __repr__(self):
-        return "Person " + str(self.unique_id)
+        return "Household " + str(self.unique_id)
 
 
     def init_step(self):
@@ -158,7 +154,7 @@ class HouseholdAgent(mg.GeoAgent):
         self.damage = np.clip(self.damage + new_damage, 0, 1)        
 
 
-    def end_step(self):
+    def step(self):
         if self.status != STATUS_DISPLACED \
             and not self.received_flood:
             self.fix_damage()
