@@ -6,7 +6,7 @@ from agents import HouseholdAgent
 
 
 class IGAD(mesa.Model):
-    """Model class for a simplistic infection model."""
+    """Model class for the IGAD model."""
 
 
     def __init__(
@@ -63,7 +63,8 @@ class IGAD(mesa.Model):
         n_agents = len(positions)
         for i in range(n_agents):
             x, y = positions[i]
-            print(x,y)
+            x = x + np.random.normal(0, 0.001)
+            y = y + np.random.normal(0, 0.001)
             household = ac_population.create_agent(
                 Point(x, y), 
                 "H" + str(i)
@@ -145,17 +146,10 @@ class IGAD(mesa.Model):
         if self.__has_floods():
             events = self.events[self.steps]
             self.do_flood(events)
-        
-        
 
         self.schedule.step()
-
-
-        self.space._recreate_rtree()  # Recalculate spatial tree, because agents are moving
-
+        #self.space._recreate_rtree()
         self.datacollector.collect(self)
-
-        # Run until no one is infected
 
 
 

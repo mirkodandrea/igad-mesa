@@ -73,19 +73,34 @@ def households_draw(agent):
     """
     portrayal = dict()
     if isinstance(agent, HouseholdAgent):
-        portrayal["radius"] = "2"
-    if agent.status == 'normal':
-        portrayal["color"] = "Green"
-    elif agent.status == 'evacuated':
-        portrayal["color"] = "Yellow"
-    elif agent.status == 'displaced':
+        portrayal["radius"] = "5"
+
+    if agent.received_flood:
         portrayal["color"] = "Red"
+    else:
+        portrayal["color"] = "Green"
+
+    if agent.status == 'normal':
+        portrayal["dashArray"] = "1"
+
+    # elif agent.status == 'evacuated':
+    #     portrayal["color"] = "Yellow"
+
+    elif agent.status == 'displaced':
+        portrayal["dashArray"] = "1, 5"
+
+    #"Shape": Can be either "circle", "rect", "arrowHead"
+    portrayal["Shape"] = "rect"
 
     return portrayal
 
 
 infected_text = IGADText()
-map_element = mg.visualization.MapModule(households_draw)
+map_element = mg.visualization.MapModule(
+    households_draw,
+    map_width=640,
+    map_height=640,
+)
 # infected_chart = mesa.visualization.ChartModule(
 #     [
 #         {"Label": "infected", "Color": "Red"},

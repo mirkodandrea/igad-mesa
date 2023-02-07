@@ -10,6 +10,8 @@ STATUS_NORMAL = 'normal'
 STATUS_EVACUATED = 'evacuated'
 STATUS_DISPLACED = 'displaced'
 
+LOW_DAMAGE_THRESHOLD = 0.4
+MEDIUM_DAMAGE_THRESHOLD = 0.65
 
 import numpy as np
 from numpy.random import normal, random
@@ -54,25 +56,31 @@ class HouseholdAgent(mg.GeoAgent):
         self.received_flood = False
         self.prepared = False
 
-
-
-
     def __repr__(self):
         return "Household " + str(self.unique_id)
 
 
     def init_step(self):
-        """init household status for each step"""
+        """init household status for each step
+        decide wether or not displace or stay based on house damage
+        """
         # set all flags back to False
         self.alerted = False
         self.prepared = False
         self.received_flood = False
 
-        # check household damage and decide to return to normal
-        
-        if self.damage < 0.25:
+        # check household damage and decide status
+        if self.damage < LOW_DAMAGE_THRESHOLD:
+            # low damage, return to normal
             self.status = STATUS_NORMAL
+
+        elif self.damage < MEDIUM_DAMAGE_THRESHOLD:
+            if self.status == STATUS_NORMAL:
+                # medium damage, if income is high enough, displace
+                if random() < 0.5 and self.income >= POVERTY_LINE:
+                    self.status = STATUS_DISPLACED
         else:
+            # high damage, displace
             self.status = STATUS_DISPLACED
 
         
