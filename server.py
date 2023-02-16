@@ -90,28 +90,27 @@ def households_draw(agent):
         portrayal["dashArray"] = "1, 5"
 
     #"Shape": Can be either "circle", "rect", "arrowHead"
-    portrayal["Shape"] = "rect"
+    portrayal["description"] = {'status': agent.status, 'income': agent.income, 'awareness': agent.awareness, 'fear': agent.fear, 'trust': agent.trust, 'received_flood': agent.received_flood}
 
     return portrayal
 
 
-infected_text = IGADText()
+model_text_element = IGADText()
 map_element = mg.visualization.MapModule(
     households_draw,
-    map_width=640,
-    map_height=640,
+    map_width=400,
+    map_height=400,
 )
-# infected_chart = mesa.visualization.ChartModule(
-#     [
-#         {"Label": "infected", "Color": "Red"},
-#         {"Label": "susceptible", "Color": "Green"},
-#         {"Label": "recovered", "Color": "Blue"},
-#         {"Label": "dead", "Color": "Black"},
-#     ]
-# )
+
+chart = mesa.visualization.ChartModule([{
+    "Label": "n_displaced",
+    "Color": "Black"}],
+    data_collector_name='datacollector'
+)
+
 server = mesa.visualization.ModularServer(
     IGAD,
-    [map_element, infected_text, ], #infected_chart],
+    [map_element, model_text_element, chart],
     "Basic agent-based IGAD model",
     model_params,
 )

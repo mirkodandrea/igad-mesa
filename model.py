@@ -32,7 +32,6 @@ class IGAD(mesa.Model):
         self.space = mg.GeoSpace(crs='epsg:4326', warn_crs_conversion=False)
         self.steps = 0
         self.counts = None
-        self.reset_counts()
 
         # IGAD MODEL PARAMETERS
         self.events = events
@@ -43,12 +42,15 @@ class IGAD(mesa.Model):
         
         self.running = True
         self.datacollector = mesa.DataCollector(
-            {
-                # "infected": get_infected_count,
-                # "susceptible": get_susceptible_count,
-                # "recovered": get_recovered_count,
-                # "dead": get_dead_count,
-            }
+            model_reporters={
+                "n_displaced": self.get_n_displaced,
+            },
+            agent_reporters={
+                "status": lambda agent: agent.status,
+                "flooded": lambda agent: agent.received_flood,
+                "alerted": lambda agent: agent.alerted,
+                "damage": lambda agent: agent.damage
+            },
         )
         self.agents = []
 
@@ -81,16 +83,6 @@ class IGAD(mesa.Model):
             self.agents.append(household)
 
         self.datacollector.collect(self)
-
-    def reset_counts(self):
-        self.counts = {
-            # "susceptible": 0,
-            # "infected": 0,
-            # "recovered": 0,
-            # "dead": 0,
-            # "safe": 0,
-            # "hotspot": 0,
-        }
 
     def __has_floods(self):
         return self.steps in self.events
@@ -136,9 +128,7 @@ class IGAD(mesa.Model):
 
     def step(self):
         """Run one step of the model."""
-        self.steps += 1
-        self.reset_counts()
-        
+        self.steps += 1      
 
         self.init_step()
         self.maybe_emit_early_warning()
@@ -150,21 +140,9 @@ class IGAD(mesa.Model):
         self.schedule.step()
         #self.space._recreate_rtree()
         self.datacollector.collect(self)
+        
+        #df = self.datacollector.get_agent_vars_dataframe()
+        #df.to_csv('data.csv')
 
-
-
-# # Functions needed for datacollector
-# def get_infected_count(model):
-#     return model.counts["infected"]
-
-
-# def get_susceptible_count(model):
-#     return model.counts["susceptible"]
-
-
-# def get_recovered_count(model):
-#     return model.counts["recovered"]
-
-
-# def get_dead_count(model):
-#     return model.counts["dead"]
+    def get_n_displaced(self):
+        return len([a for a in self.agents if a.status == 'displaced'])
