@@ -90,7 +90,17 @@ def households_draw(agent):
         portrayal["dashArray"] = "1, 5"
 
     #"Shape": Can be either "circle", "rect", "arrowHead"
-    portrayal["description"] = {'status': agent.status, 'income': agent.income, 'awareness': agent.awareness, 'fear': agent.fear, 'trust': agent.trust, 'received_flood': agent.received_flood}
+    portrayal["description"] = {
+        'id': agent.unique_id,
+        'damage': f"h: {agent.house_damage} - l: {agent.livelihood_damage}",
+        'status': agent.status, 
+        'income': int(agent.income), 
+        'awareness': int(100 * agent.awareness), 
+        'fear': int(100 * agent.fear), 
+        'perception': int(100 * agent.perception),
+        'trust': int(100 * agent.trust), 
+        'received_flood': agent.received_flood
+    }
 
     return portrayal
 

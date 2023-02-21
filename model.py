@@ -7,8 +7,6 @@ from agents import HouseholdAgent
 
 class IGAD(mesa.Model):
     """Model class for the IGAD model."""
-
-
     def __init__(
         self, 
         positions=None,
@@ -37,7 +35,6 @@ class IGAD(mesa.Model):
         self.events = events
         self.false_alarm_rate = false_alarm_rate
         self.false_negative_rate = false_negative_rate
-
         
         
         self.running = True
@@ -49,7 +46,7 @@ class IGAD(mesa.Model):
                 "status": lambda agent: agent.status,
                 "flooded": lambda agent: agent.received_flood,
                 "alerted": lambda agent: agent.alerted,
-                "damage": lambda agent: agent.damage
+                "damage": lambda agent: agent.house_damage
             },
         )
         self.agents = []
@@ -61,8 +58,10 @@ class IGAD(mesa.Model):
             crs=self.space.crs,
             agent_kwargs={},
         )
-        # Generate random location, add agent to grid and scheduler
+
+        # Create agents and assign them to the space, with slight randomization of the position
         n_agents = len(positions)
+
         for i in range(n_agents):
             x, y = positions[i]
             x = x + np.random.normal(0, 0.001)
@@ -71,6 +70,7 @@ class IGAD(mesa.Model):
                 Point(x, y), 
                 "H" + str(i)
             )
+            # Assign attributes
             household.trust = trusts[i]
             household.income = incomes[i]
             household.flood_prone = flood_prones[i]
@@ -85,11 +85,14 @@ class IGAD(mesa.Model):
         self.datacollector.collect(self)
 
     def __has_floods(self):
+        """
+        Check if there is a flood event in current time step
+        """
         return self.steps in self.events
 
     def maybe_emit_early_warning(self):
         """ 
-        emit early warning.
+        fuzzy emit early warning
         If there is a flood event in time t, emit early warning with probability 1 - false_negative_rate
         If there is no flood event in time t, emit early warning with probability false_alarm_rate        
         """
@@ -98,18 +101,26 @@ class IGAD(mesa.Model):
             emit = self.random.random() < self.false_negative_rate
         else:
             emit = self.random.random() < self.false_alarm_rate
+        
+        if not emit:
+            return 
 
-        if emit:
-            [agent.receive_early_warning() for agent in self.agents]
-            [agent.check_neighbours() for agent in self.agents]
-            pass
+        print('Early warning at time step', self.steps)
+        for agent in self.agents:
+            agent.receive_early_warning()
+        for agent in self.agents:                
+            agent.check_neighbours_for_evacuation()
+            
 
     def init_step(self):
-        [agent.init_step() for agent in self.agents]
+        """ execute init step for all agents
+        """
+        for household in self.agents:
+            household.init_step()
 
     def do_flood(self, events):
         """ 
-        do flood
+        Apply flood to all agents
         """
         for household in self.agents:
             flood_value = 0
@@ -125,7 +136,6 @@ class IGAD(mesa.Model):
             household.receive_flood(flood_value)
 
 
-
     def step(self):
         """Run one step of the model."""
         self.steps += 1      
@@ -137,8 +147,8 @@ class IGAD(mesa.Model):
             events = self.events[self.steps]
             self.do_flood(events)
 
+        # execute remaining steps for all agents
         self.schedule.step()
-        #self.space._recreate_rtree()
         self.datacollector.collect(self)
         
         #df = self.datacollector.get_agent_vars_dataframe()

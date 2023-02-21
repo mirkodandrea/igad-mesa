@@ -1,10 +1,11 @@
-from constants import (
-    POVERTY_LINE, MAX_DISTANCE, FLOOD_DAMAGE_THRESHOLD, 
-    FLOOD_DAMAGE_MAX, FLOOD_FEAR_MAX,
-    DISPLACE_DAMAGE_THRESHOLD,
-    
-    EVENT_FLOOD, EVENT_EARLY_WARNING
-)
+import mesa_geo as mg
+import numpy as np
+from numpy.random import normal, random
+from shapely.geometry import Point
+
+from constants import (DISPLACE_DAMAGE_THRESHOLD, EVENT_EARLY_WARNING,
+                       EVENT_FLOOD, FLOOD_DAMAGE_MAX, FLOOD_DAMAGE_THRESHOLD,
+                       FLOOD_FEAR_MAX, MAX_DISTANCE, POVERTY_LINE)
 
 STATUS_NORMAL = 'normal'
 STATUS_EVACUATED = 'evacuated'
@@ -13,16 +14,10 @@ STATUS_DISPLACED = 'displaced'
 LOW_DAMAGE_THRESHOLD = 0.4
 MEDIUM_DAMAGE_THRESHOLD = 0.65
 
-import numpy as np
-from numpy.random import normal, random
-
-from shapely.geometry import Point
-
-import mesa_geo as mg
 
 
 class HouseholdAgent(mg.GeoAgent):
-    """Person Agent."""
+    """Household Agent."""
 
     def __init__(
         self,
@@ -44,16 +39,17 @@ class HouseholdAgent(mg.GeoAgent):
 
         # self.price = price
         # self.vulnerability = vulnerability
-        # self.family_members = family_members
+        self.obstacles_to_movement = False
 
-        self.damage = 0
-        self.displaced = False
-        
+        self.house_damage = 0
+        self.livelihood_damage = 0
         self.status = STATUS_NORMAL
         
-        # prepared to flood
+        # received early warning
         self.alerted = False
+        # received flood on last step
         self.received_flood = False
+        # prepared to flood
         self.prepared = False
 
     def __repr__(self):
@@ -61,29 +57,67 @@ class HouseholdAgent(mg.GeoAgent):
 
 
     def init_step(self):
-        """init household status for each step
-        decide wether or not displace or stay based on house damage
+        """
+        set household status for each step to initial values        
         """
         # set all flags back to False
         self.alerted = False
         self.prepared = False
         self.received_flood = False
 
-        # check household damage and decide status
-        if self.damage < LOW_DAMAGE_THRESHOLD:
-            # low damage, return to normal
+        self.return_decision()
+    
+    def return_decision(self):
+        if self.house_damage < LOW_DAMAGE_THRESHOLD:
             self.status = STATUS_NORMAL
+            return
 
-        elif self.damage < MEDIUM_DAMAGE_THRESHOLD:
-            if self.status == STATUS_NORMAL:
-                # medium damage, if income is high enough, displace
-                if random() < 0.5 and self.income >= POVERTY_LINE:
-                    self.status = STATUS_DISPLACED
-        else:
-            # high damage, displace
+    def displacement_decision(self):
+        """ 
+        check household damage and decide status
+        """
+        if self.status == STATUS_DISPLACED:
+            return
+
+        if self.house_damage > MEDIUM_DAMAGE_THRESHOLD or \
+            self.livelihood_damage > MEDIUM_DAMAGE_THRESHOLD:
+            self.status = STATUS_DISPLACED
+            return
+
+        if self.house_damage < LOW_DAMAGE_THRESHOLD and \
+            self.livelihood_damage < LOW_DAMAGE_THRESHOLD:
+            return      
+    
+        # in case of medium house damage or medium livelihood damage, check against perception
+        if self.perception < random():
+            return
+    
+        if self.income > POVERTY_LINE and \
+            not self.obstacles_to_movement:
+                self.status = STATUS_DISPLACED
+
+    def update_displacement_decision(self):
+        """
+        update displacement decision based on neighbours
+        do this only if household is not already displaced and
+        has income above poverty line and no obstacles to movement
+        """    
+        if self.status != STATUS_NORMAL or\
+            self.income < POVERTY_LINE or \
+            self.obstacles_to_movement:
+            return
+        
+        if self.perception < 0.5:
+            return 
+        
+        neighbours = list(self.model.space.get_neighbors_within_distance(
+               self, MAX_DISTANCE
+        ))
+        
+        other_statuses = [neighbour.status == STATUS_DISPLACED for neighbour in neighbours]
+        if sum(other_statuses) > 0.75 * len(neighbours):
             self.status = STATUS_DISPLACED
 
-        
 
     def receive_early_warning(self):
         """receive early warning from government
@@ -92,28 +126,34 @@ class HouseholdAgent(mg.GeoAgent):
         - if household is not aware of risk, prepare
         - if household is aware of risk, evacuate without preparing
         """
-        self.alerted = True
 
         if self.status != STATUS_NORMAL:
-            # already evacuated
+            # already displaced or evacuated
+            # don't receive early warning
             return
+
+        self.alerted = True
+
+        if self.trust < 0.5:
+            # distrust the government
+            return
+
+
+        # prepare for flood anyway        
+        self.prepared = True
         
         if self.income < POVERTY_LINE:
-            # poor household
-            return
+            # poor household, cannot afford to move
+            return 
         
-        if self.trust >= 0.5:
-            # trust the government
-            if self.perception >= 0.5:
-                # aware of risk
-                self.status = STATUS_EVACUATED
-                return
+        # trust the government
+        if self.perception >= 0.5:
+            # aware of risk, move before flood
+            self.status = STATUS_EVACUATED
 
-            self.prepared = True
-        
-            
 
-    def check_neighbours(self):
+
+    def check_neighbours_for_evacuation(self):
         """check neighbours for early warning reaction
         - if enough neighbours are evacuated, then evacuate
         - if enough neighbours are prepared, then prepare
@@ -123,17 +163,24 @@ class HouseholdAgent(mg.GeoAgent):
             # already evacuated
             return
         
+        # collect neighbours
         neighbours = list(self.model.space.get_neighbors_within_distance(
                self, MAX_DISTANCE
         ))
 
+        # check if other households are evacuated
+        other_status = [neighbour.status == STATUS_EVACUATED for neighbour in neighbours]
+        if sum(other_status) > 0.25 * len(neighbours):
+            # enough neighbours are evacuated, evacuate myself if income is high enough
+            if self.income >= POVERTY_LINE:
+                self.status = STATUS_EVACUATED
+ 
+
         other_prepared = [neighbour.prepared for neighbour in neighbours]
-        if sum(other_prepared) > 0.5 * len(neighbours):
+        if sum(other_prepared) > 0.25 * len(neighbours):
+            # enough neighbours are prepared, prepare myself
             self.prepared = True
 
-        other_status = [neighbour.status == STATUS_EVACUATED for neighbour in neighbours]
-        if sum(other_status) > 0.5 * len(neighbours):
-            self.status = STATUS_EVACUATED
 
             
     def receive_flood(self, flood_value):
@@ -146,12 +193,10 @@ class HouseholdAgent(mg.GeoAgent):
 
         if flood_value == 0:
             """ nothing happened to this household """
-            # [TODO] update trust if alerted
             self.received_flood = False
-            return
-
+            self.fix_damage()
+        
         self.received_flood = True
-
         if self.prepared and flood_value < FLOOD_DAMAGE_THRESHOLD:
             return
         
@@ -159,15 +204,19 @@ class HouseholdAgent(mg.GeoAgent):
         if self.prepared:
             new_damage = new_damage * 0.5
 
-        self.damage = np.clip(self.damage + new_damage, 0, 1)        
+        self.house_damage = np.clip(self.house_damage + new_damage, 0, 1)
 
+        # livelihood damage isn't affected by preparedness
+        new_damage = (flood_value / FLOOD_DAMAGE_MAX)
+        self.livelihood_damage = np.clip(self.livelihood_damage + new_damage, 0, 1)
+
+        self.displacement_decision()
+           
 
     def step(self):
-        if self.status != STATUS_DISPLACED \
-            and not self.received_flood:
-            self.fix_damage()
-
+        self.update_displacement_decision()
         self.update_sentiments()
+
 
     def update_sentiments(self):
         """
@@ -223,7 +272,8 @@ class HouseholdAgent(mg.GeoAgent):
         if self.income < 10:
             recovery = recovery * (1 - (10 - self.income) * 0.01)
 
-        self.damage = np.clip(self.damage - recovery, 0, 1)
+        self.house_damage = np.clip(self.house_damage - recovery, 0, 1)
+        self.livelihood_damage = np.clip(self.livelihood_damage - recovery, 0, 1)
 
         neighbours = self.model.space.get_neighbors_within_distance(
                self, MAX_DISTANCE
@@ -231,10 +281,18 @@ class HouseholdAgent(mg.GeoAgent):
 
         # help other household to fix damage
         for neighbour in neighbours:
-            if neighbour.damage > 0:
-                neighbour.damage = np.clip(neighbour.damage - 0.05, 0, 1)
+            if neighbour.house_damage > 0:
+                neighbour.house_damage = np.clip(neighbour.house_damage - 0.05, 0, 1)
 
     
     @property
     def perception(self):
         return self.awareness * self.fear
+    
+    @property
+    def income(self):
+        return self._income * (1 - self.livelihood_damage)
+    
+    @income.setter
+    def income(self, value):
+        self._income = value
