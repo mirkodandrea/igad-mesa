@@ -23,3 +23,18 @@ def get_events(initial_year, stride=None):
                     rio_object=f
                 ))
     return events
+
+
+def load_population_data() -> pd.DataFrame:
+    df = pd.read_excel('IGAD/population_data.xlsx')
+    df =  df[[
+        'village',
+        'income',
+        'vulnerabilities',
+        'properties',
+        'walls_materials',
+        'fear_of_flood',
+        'household_size',
+    ]]
+    df.fillna(0, inplace=True)
+    return df

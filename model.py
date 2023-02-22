@@ -2,9 +2,9 @@ import mesa
 import mesa_geo as mg
 from shapely.geometry import Point
 import numpy as np
-from agents import HouseholdAgent
+from agents import HouseholdAgent, STATUS_EVACUATED, STATUS_NORMAL, STATUS_DISPLACED
 
-
+EXPORT_TO_CSV = False
 class IGAD(mesa.Model):
     """Model class for the IGAD model."""
     def __init__(
@@ -16,6 +16,8 @@ class IGAD(mesa.Model):
         events=None,
         awarenesses=None,
         fears= None,
+        house_materials=None,
+        obstacles_to_movement=None,
         false_alarm_rate=None,
         false_negative_rate=None,
     ):
@@ -40,13 +42,25 @@ class IGAD(mesa.Model):
         self.running = True
         self.datacollector = mesa.DataCollector(
             model_reporters={
-                "n_displaced": self.get_n_displaced,
+                "n_displaced": lambda this: len([a for a in this.agents if a.status == STATUS_DISPLACED]),
+                "n_normal": lambda this: len([a for a in this.agents if a.status == STATUS_NORMAL]),
+                "n_evacuated": lambda this: len([a for a in this.agents if a.status == STATUS_EVACUATED]),
+                "n_flooded": lambda this: len([a for a in this.agents if a.received_flood]),
+                "mean_house_damage": lambda this: np.mean([a.house_damage for a in this.agents]),
+                "mean_livelihood_damage": lambda this: np.mean([a.livelihood_damage for a in this.agents]),
+                "mean_trust": lambda this: np.mean([a.trust for a in this.agents]),
+                "mean_perception": lambda this: np.mean([a.perception for a in this.agents]),
+                "mean_income": lambda this: np.mean([a.income for a in this.agents]),
             },
             agent_reporters={
                 "status": lambda agent: agent.status,
                 "flooded": lambda agent: agent.received_flood,
                 "alerted": lambda agent: agent.alerted,
-                "damage": lambda agent: agent.house_damage
+                "house_damage": lambda agent: agent.house_damage,
+                "livelihood_damage": lambda agent: agent.livelihood_damage,
+                "trust": lambda agent: agent.trust,
+                "perception": lambda agent: agent.perception,
+                "income": lambda agent: agent.income,
             },
         )
         self.agents = []
@@ -72,11 +86,13 @@ class IGAD(mesa.Model):
             )
             # Assign attributes
             household.trust = trusts[i]
-            household.income = incomes[i]
-            household.flood_prone = flood_prones[i]
+            household.base_income = incomes[i]
+            household.flood_prone = bool(flood_prones[i])
             household.awareness = awarenesses[i]
             household.fear = fears[i]
             household.trust = trusts[i]
+            household.house_materials = house_materials[i]
+            household.obstacles_to_movement = bool(obstacles_to_movement[i])
 
             self.space.add_agents(household)
             self.schedule.add(household)
@@ -151,8 +167,7 @@ class IGAD(mesa.Model):
         self.schedule.step()
         self.datacollector.collect(self)
         
-        #df = self.datacollector.get_agent_vars_dataframe()
-        #df.to_csv('data.csv')
+        if EXPORT_TO_CSV:            
+            df = self.datacollector.get_agent_vars_dataframe()
+            df.to_csv('data.csv')
 
-    def get_n_displaced(self):
-        return len([a for a in self.agents if a.status == 'displaced'])

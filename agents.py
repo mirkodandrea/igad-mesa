@@ -196,6 +196,7 @@ class HouseholdAgent(mg.GeoAgent):
             self.received_flood = False
             self.fix_damage()
         
+
         self.received_flood = True
         if self.prepared and flood_value < FLOOD_DAMAGE_THRESHOLD:
             return
@@ -204,10 +205,17 @@ class HouseholdAgent(mg.GeoAgent):
         if self.prepared:
             new_damage = new_damage * 0.5
 
+        if self.house_materials in ['Concrete', 'Stone bricks']:
+            new_damage *= 1.0 
+        elif self.house_materials in ['Mud bricks','Wood']:
+            new_damage *= 1.5
+        elif self.house_materials == 'Informal settlement ':
+            new_damage *= 2.0
+
         self.house_damage = np.clip(self.house_damage + new_damage, 0, 1)
 
         # livelihood damage isn't affected by preparedness
-        new_damage = (flood_value / FLOOD_DAMAGE_MAX)
+        new_damage = 0.1 * (flood_value / FLOOD_DAMAGE_MAX)
         self.livelihood_damage = np.clip(self.livelihood_damage + new_damage, 0, 1)
 
         self.displacement_decision()
@@ -268,9 +276,15 @@ class HouseholdAgent(mg.GeoAgent):
             return
 
         recovery = 0.3
-        # every unit of income less than 10 decreases recovery capacity by 1%
-        if self.income < 10:
-            recovery = recovery * (1 - (10 - self.income) * 0.01)
+        # every unit of income above poverty line increases recovery by 10%
+        recovery = recovery * (1 + (self.income - POVERTY_LINE) / 10)
+
+        if self.house_materials in ['Concrete', 'Stone bricks']:
+            recovery *= 1.0 
+        elif self.house_materials in ['Mud bricks','Wood']:
+            recovery *= 1.5
+        elif self.house_materials == 'Informal settlement ':
+            recovery *= 2.0            
 
         self.house_damage = np.clip(self.house_damage - recovery, 0, 1)
         self.livelihood_damage = np.clip(self.livelihood_damage - recovery, 0, 1)
@@ -291,8 +305,5 @@ class HouseholdAgent(mg.GeoAgent):
     
     @property
     def income(self):
-        return self._income * (1 - self.livelihood_damage)
-    
-    @income.setter
-    def income(self, value):
-        self._income = value
+        return self.base_income * (1 - self.livelihood_damage)
+   
