@@ -36,7 +36,9 @@ class HouseholdAgent(mg.GeoAgent):
 
         self.house_damage = 0
         self.livelihood_damage = 0
+
         self.status = STATUS_NORMAL
+        self.status_changed = False
         
         # received early warning
         self.alerted = False
@@ -44,6 +46,9 @@ class HouseholdAgent(mg.GeoAgent):
         self.received_flood = False
         # prepared to flood
         self.prepared = False
+        
+        # keep track of being forced to move on current step
+        
 
     def __repr__(self):
         return "Household " + str(self.unique_id)
@@ -57,7 +62,7 @@ class HouseholdAgent(mg.GeoAgent):
         self.alerted = False
         self.prepared = False
         self.received_flood = False
-
+        self.status_changed = False
         self.return_decision()
     
     def return_decision(self):
@@ -231,11 +236,11 @@ class HouseholdAgent(mg.GeoAgent):
         - if household is not alerted and at least a neighbour received flood, fear -> fear + 20%
         - if household is not alerted and noone received flood, 
         """
-        if self.status == STATUS_DISPLACED:
-            self.awareness = 1.0
-            self.fear = 1.0
+       
+        if self.status != STATUS_NORMAL and not self.status_changed:
             return
-
+        
+        
         neighbours = self.model.space.get_neighbors_within_distance(
                self, MAX_DISTANCE
         )
@@ -303,4 +308,18 @@ class HouseholdAgent(mg.GeoAgent):
     @property
     def income(self):
         return self.base_income * (1 - self.livelihood_damage)
+    
+    @property 
+    def status(self):
+        return self._status
+    
+    @status.setter
+    def status(self, value):
+        if self._status == STATUS_NORMAL and value in [STATUS_EVACUATED, STATUS_DISPLACED]:
+            self.status_changed = True
+        else:
+            self.status_changed = False 
+
+        self._status = value
+    
    
