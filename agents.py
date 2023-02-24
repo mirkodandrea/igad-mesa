@@ -212,7 +212,7 @@ class HouseholdAgent(mg.GeoAgent):
         self.house_damage = np.clip(self.house_damage + new_damage, 0, 1)
 
         # livelihood damage isn't affected by preparedness
-        new_damage = 0.1 * (flood_value / FLOOD_DAMAGE_MAX)
+        new_damage = flood_value / FLOOD_DAMAGE_MAX
         self.livelihood_damage = np.clip(self.livelihood_damage + new_damage, 0, 1)
 
         self.displacement_decision()
@@ -245,11 +245,11 @@ class HouseholdAgent(mg.GeoAgent):
             any(neighbours_flooded)
         
         if self.received_flood:
-            self.awareness = 1.0
+            self.awareness = np.clip(self.awareness * 1.4, 0, 1)
 
         elif len(neighbours_flooded) > 0 \
             and sum(neighbours_flooded) > 0.25 * len(neighbours_flooded):
-            self.awareness = 1.0
+            self.awareness = np.clip(self.awareness * 1.4, 0, 1)
 
         if self.alerted and anyone_flooded:
             self.trust = 1.0
