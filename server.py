@@ -68,17 +68,6 @@ model_params = dict(
 
 
 
-# model_params = {
-#     # "pop_size": mesa.visualization.Slider("Population size", 30, 10, 10000, 10),
-#     # "init_infected": mesa.visualization.Slider(
-#     #     "Fraction initial infection", 0.2, 0.00, 1.0, 0.05
-#     # ),
-#     # "exposure_distance": mesa.visualization.Slider(
-#     #     "Exposure distance", 500, 100, 1000, 100
-#     # ),
-# }
-
-
 def households_draw(agent):
     """
     Portrayal Method for canvas

@@ -31,8 +31,7 @@ class HouseholdAgent(mg.GeoAgent):
         :param unique_id:   Unique identifier for the agent
         :param model:       Model in which the agent runs
         :param geometry:    Shape object for the agent
-        :param agent_type:  Indicator if agent is infected ("infected", "susceptible", "recovered" or "dead")
-        :param mobility_range:  Range of distance to move in one step
+        
         """
         super().__init__(unique_id, model, geometry, crs)
         # Agent parameters

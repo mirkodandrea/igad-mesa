@@ -22,11 +22,18 @@ class IGAD(mesa.Model):
         false_negative_rate=None,
     ):
         """
-        Create a new InfectedModel
-        :param pop_size:        Size of population
-        :param init_infected:   Probability of a person agent to start as infected
-        :param exposure_distance:   Proximity distance between agents to be exposed to each other
-        :param infection_risk:      Probability of agent to become infected, if it has been exposed to another infected
+        Create a new IGAD model.
+        :param positions:   List of tuples with the x and y coordinates of each agent
+        :param trusts:      List of trust values for each agent
+        :param incomes:     List of income values for each agent
+        :param flood_prones:    List of flood prone values for each agent
+        :param events:      List of events for each agent
+        :param awarenesses: List of awareness values for each agent
+        :param fears:       List of fear values for each agent
+        :param house_materials: List of house material values for each agent
+        :param obstacles_to_movement:   List of obstacles to movement values for each agent
+        :param false_alarm_rate:    False alarm rate for the model
+        :param false_negative_rate: False negative rate for the model
         """
         self.schedule = mesa.time.BaseScheduler(self)
         self.space = mg.GeoSpace(crs='epsg:4326', warn_crs_conversion=False)
