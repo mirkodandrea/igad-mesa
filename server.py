@@ -12,7 +12,6 @@ class IGADText(mesa.visualization.TextElement):
     """
     Display a text count of how many steps have been taken
     """
-
     def __init__(self):
         pass
 
@@ -76,17 +75,15 @@ def households_draw(agent):
     if isinstance(agent, HouseholdAgent):
         portrayal["radius"] = "5"
 
-    if agent.received_flood:
-        portrayal["color"] = "Red"
-    else:
-        portrayal["color"] = "Green"
+    # calculate color using rgb color space   
+    r = int(255 * agent.house_damage)
+    g = int(255 * (1 - agent.house_damage))
+    b = 0
+
+    portrayal["color"] = ('#%02x%02x%02x' % (r, g, b)).upper()
 
     if agent.status == 'normal':
         portrayal["dashArray"] = "1"
-
-    # elif agent.status == 'evacuated':
-    #     portrayal["color"] = "Yellow"
-
     elif agent.status == 'displaced':
         portrayal["dashArray"] = "1, 5"
 
@@ -102,7 +99,9 @@ def households_draw(agent):
         'trust': f"{int(100 * agent.trust)}%", 
         'received_flood': agent.received_flood,
         'house_materials': agent.house_materials,
-        'obstacles_to_movement': agent.obstacles_to_movement
+        'obstacles_to_movement': agent.obstacles_to_movement,
+        'last_house_damage': f"{int(100 * agent.last_house_damage)}%",
+        'last_livelihood_damage': f"{int(agent.last_livelihood_damage)}%",
     }
 
     return portrayal

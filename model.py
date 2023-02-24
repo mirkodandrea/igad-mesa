@@ -4,7 +4,7 @@ from shapely.geometry import Point
 import numpy as np
 from agents import HouseholdAgent, STATUS_EVACUATED, STATUS_NORMAL, STATUS_DISPLACED
 
-EXPORT_TO_CSV = False
+EXPORT_TO_CSV = True
 class IGAD(mesa.Model):
     """Model class for the IGAD model."""
     def __init__(
@@ -137,7 +137,8 @@ class IGAD(mesa.Model):
 
         print('Early warning at time step', self.steps)
         for agent in self.agents:
-            agent.receive_early_warning()
+            if agent.flood_prone:
+                agent.receive_early_warning()
         for agent in self.agents:                
             agent.check_neighbours_for_evacuation()
             
@@ -155,9 +156,17 @@ class IGAD(mesa.Model):
                     flood_data[row, col]+
                     [flood_value]
                 )
-            
             household.receive_flood(flood_value)
 
+    def fix_damages(self):
+        """
+        Fix damages for all agents
+        """
+        for agent in self.agents:
+            agent.fix_damage()
+
+        for agent in self.agents:
+            agent.fix_neighbours_damage()
 
     def step(self):
         """Run one step of the model."""
@@ -169,6 +178,8 @@ class IGAD(mesa.Model):
         if self.__has_floods():
             events = self.events[self.steps]
             self.do_flood(events)
+
+        self.fix_damages()
 
         # execute remaining steps for all agents
         self.schedule.step()
