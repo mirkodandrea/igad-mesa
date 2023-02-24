@@ -112,6 +112,13 @@ class IGAD(mesa.Model):
         Check if there is a flood event in current time step
         """
         return self.steps in self.events
+    
+
+    def init_step(self):
+        """ execute init step for all agents
+        """
+        for household in self.agents:
+            household.init_step()
 
     def maybe_emit_early_warning(self):
         """ 
@@ -134,13 +141,6 @@ class IGAD(mesa.Model):
         for agent in self.agents:                
             agent.check_neighbours_for_evacuation()
             
-
-    def init_step(self):
-        """ execute init step for all agents
-        """
-        for household in self.agents:
-            household.init_step()
-
     def do_flood(self, events):
         """ 
         Apply flood to all agents

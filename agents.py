@@ -1,20 +1,17 @@
 import mesa_geo as mg
 import numpy as np
-from numpy.random import normal, random
+from numpy.random import random
 from shapely.geometry import Point
 
-from constants import (DISPLACE_DAMAGE_THRESHOLD, EVENT_EARLY_WARNING,
-                       EVENT_FLOOD, FLOOD_DAMAGE_MAX, FLOOD_DAMAGE_THRESHOLD,
-                       FLOOD_FEAR_MAX, MAX_DISTANCE, POVERTY_LINE)
+from constants import (FLOOD_DAMAGE_MAX, FLOOD_DAMAGE_THRESHOLD, MAX_DISTANCE,
+                       POVERTY_LINE)
 
 STATUS_NORMAL = 'normal'
 STATUS_EVACUATED = 'evacuated'
 STATUS_DISPLACED = 'displaced'
 
 LOW_DAMAGE_THRESHOLD = 0.4
-MEDIUM_DAMAGE_THRESHOLD = 0.65
-
-
+MEDIUM_DAMAGE_THRESHOLD = 0.6
 
 class HouseholdAgent(mg.GeoAgent):
     """Household Agent."""
@@ -31,13 +28,10 @@ class HouseholdAgent(mg.GeoAgent):
         :param unique_id:   Unique identifier for the agent
         :param model:       Model in which the agent runs
         :param geometry:    Shape object for the agent
-        
+        :param crs:         Coordinate reference system for the agent    
         """
         super().__init__(unique_id, model, geometry, crs)
         # Agent parameters
-
-        # self.price = price
-        # self.vulnerability = vulnerability
         self.obstacles_to_movement = False
 
         self.house_damage = 0
@@ -122,8 +116,8 @@ class HouseholdAgent(mg.GeoAgent):
         """receive early warning from government
         - if household is already evacuated, do nothing
         - if household doesn't trust the government, then do nothing
-        - if household is not aware of risk, prepare
-        - if household is aware of risk, evacuate without preparing
+        - if household has not perception of risk, prepare
+        - if household has perception of risk, evacuate and prepare
         """
 
         if self.status != STATUS_NORMAL:
@@ -135,6 +129,7 @@ class HouseholdAgent(mg.GeoAgent):
 
         if self.trust < 0.5:
             # distrust the government
+            # don't prepare
             return
 
 
@@ -186,8 +181,11 @@ class HouseholdAgent(mg.GeoAgent):
         """receive flood for current household
         increment damage if household is flooded
         - damage is in percentage
-        - damage occurs if flood value is > 10mm
+        - damage occurs if flood value is > 100mm
         - damage is proportional to flood value: 1m -> 100% damage
+        - damage is reduced by 50% if household is prepared
+        - damage is increased if household is made of mud bricks or wood by 50%
+        - damage is increased if household is an informal settlement by 100%
         """
 
         if flood_value == 0:
