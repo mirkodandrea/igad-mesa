@@ -1,12 +1,15 @@
-import mesa
+import geopandas as gpd
 import mesa_geo as mg
+import numpy as np
+import pandas as pd
+from numpy.random import normal, pareto, poisson, random
 
-from model import IGAD
+import mesa
 from agents import HouseholdAgent
-from constants import (
-    POVERTY_LINE, MAX_YEARS, ALPHA_INCOME
-)
+from constants import MAX_YEARS, POVERTY_LINE
+from model import IGAD
 from utils import get_events, load_population_data
+
 
 class IGADText(mesa.visualization.TextElement):
     """
@@ -19,60 +22,13 @@ class IGADText(mesa.visualization.TextElement):
         return "Steps: " + str(model.steps)
     
 
-from numpy.random import random, normal, poisson, pareto
-import geopandas as gpd
-import pandas as pd
-
-events = get_events(initial_year=0, stride=MAX_YEARS)
-
-settlements = gpd.read_file(
-    'IGAD/settlements_with_price.gpkg').to_crs(epsg=4326)
-population_data = load_population_data()
-
-n_households = len(settlements)
-lons = settlements.geometry.centroid.x
-lats = settlements.geometry.centroid.y
-
-flood_prones = (lons - lons.min()) / (lons.max() - lons.min()) < 0.3
-positions = list(zip(lons, lats))
-
-village = 'Al-Gaili'
-population_data = population_data\
-        .query('village == @village')\
-        .sample(n_households, replace=True)
-    
-incomes = population_data['income'].apply(lambda x: (x + random())**1.3).values
-house_materials = population_data['walls_materials'].values
-fears = population_data['fear_of_flood'].values / 3
-obstacles_to_movement = (population_data[['vulnerabilities', 'properties']].sum(axis=1) > 4).values
-awarenesses = random(n_households)
-trusts = random(n_households)
-
-false_alarm_rate = 0.3
-false_negative_rate = 0.0
-
-model_params = dict(
-    positions=positions,
-    trusts=trusts,
-    incomes=incomes,
-    flood_prones=flood_prones,
-    events=events,
-    awarenesses=awarenesses,
-    house_materials=house_materials,
-    obstacles_to_movement=obstacles_to_movement,
-    fears=fears,
-    false_alarm_rate=mesa.visualization.Slider("False Alarm Rate", 0.3, 0, 1, 0.1),
-    false_negative_rate=mesa.visualization.Slider("False Negative Rate", 0.1, 0, 1, 0.1),
-)
-
-
-
 def households_draw(agent):
     """
     Portrayal Method for canvas
     """
     portrayal = dict()
-    #if isinstance(agent, HouseholdAgent):
+    if not isinstance(agent, HouseholdAgent):
+        return portrayal
     
 
     if agent.status == 'normal':
@@ -91,33 +47,99 @@ def households_draw(agent):
 
     portrayal["radius"] = agent_radius
     
-    half_circle_length = agent_radius * 3.14
+    half_circle_length = agent_radius * np.pi
     house_damage = agent.house_damage * half_circle_length
     livelihood_damage = agent.livelihood_damage * half_circle_length
     house_not_damaged = half_circle_length - house_damage
     livelihood_not_damaged = half_circle_length - livelihood_damage
-    
+
     portrayal["dashArray"] = f"{house_not_damaged}, {house_damage}, {livelihood_not_damaged}, {livelihood_damage}"
 
 
     #"Shape": Can be either "circle", "rect", "arrowHead"
-    portrayal["description"] = {
-        'id': agent.unique_id,
-        'damage': f"h: {int(100 * agent.house_damage)}% - l: {int(100 * agent.livelihood_damage)}%",
-        'status': agent.status, 
-        'income': f"{agent.income:.2f}", 
-        'awareness': f"{int(100 * agent.awareness)}%", 
-        'fear': f"{int(100 * agent.fear)}%", 
-        'perception': f"{int(100 * agent.perception)}%",
-        'trust': f"{int(100 * agent.trust)}%", 
-        'received_flood': agent.received_flood,
-        'house_materials': agent.house_materials,
-        'obstacles_to_movement': agent.obstacles_to_movement,
-        'last_house_damage': f"{int(100 * agent.last_house_damage)}%",
-        'last_livelihood_damage': f"{int(agent.last_livelihood_damage)}%",
-    }
+    portrayal["description"] = agent.get_description()
 
     return portrayal
+
+
+villages = [
+    'Al-Gaili', 
+    # 'Wawise Garb', 
+    # 'Wad Ramli Camp', 
+    # 'Eltomaniat', 
+    # 'Al-Shuhada', 
+    # 'Wawise Oum Ojaija', 
+    # 'Wad Ramli'
+]
+
+events = get_events(initial_year=0, stride=MAX_YEARS)
+
+all_settlements = gpd.read_file('IGAD/settlements_grid_wdst_sampled.gpkg').to_crs(epsg=4326)
+bounding_boxes = gpd.read_file('IGAD/BoundingBox20022023/BoundingBox_20022023.shp').to_crs(epsg=4326)
+# select only the bounding box of the village
+all_population_data = load_population_data()
+
+trusts = []
+incomes = []
+flood_prones = []
+awarenesses = []
+house_materials = []
+obstacles_to_movement = []
+fears = []
+positions = []
+
+for village in villages:
+    bounding_box = bounding_boxes.query('village == @village').geometry
+    settlements = all_settlements[all_settlements.geometry.within(bounding_box.unary_union)]
+    # resample settlements to 1/10 of the original
+    
+    n_households = len(settlements)
+
+    village_lons = settlements.geometry.centroid.x
+    village_lats = settlements.geometry.centroid.y
+
+    village_flood_prones = (village_lons - village_lons.min()) / (village_lons.max() - village_lons.min()) < 0.3
+    village_flood_prones = village_flood_prones.values
+    village_positions = list(zip(village_lons, village_lats))
+
+    population_data = all_population_data\
+            .query('village == @village')\
+            .sample(n_households, replace=True)
+        
+    village_incomes = population_data['income'].apply(lambda x: (x + random())**1.3).values
+    village_house_materials = population_data['walls_materials'].values
+    village_fears = population_data['fear_of_flood'].values / 3
+    village_obstacles_to_movement = (population_data[['vulnerabilities', 'properties']].sum(axis=1) > 4).values
+    village_awarenesses = random(n_households)
+    village_trusts = random(n_households)
+
+    positions += village_positions
+    trusts += village_trusts.tolist()
+    incomes += village_incomes.tolist()
+    flood_prones += village_flood_prones.tolist()
+    awarenesses += village_awarenesses.tolist()
+    house_materials += village_house_materials.tolist()
+    obstacles_to_movement += village_obstacles_to_movement.tolist()
+    fears += village_fears.tolist()
+
+
+false_alarm_rate = 0.3
+false_negative_rate = 0.0
+
+model_params = dict(
+    positions=positions,
+    trusts=trusts,
+    incomes=incomes,
+    flood_prones=flood_prones,
+    events=events,
+    awarenesses=awarenesses,
+    house_materials=house_materials,
+    obstacles_to_movement=obstacles_to_movement,
+    fears=fears,
+    false_alarm_rate=mesa.visualization.Slider("False Alarm Rate", 0.3, 0, 1, 0.1),
+    false_negative_rate=mesa.visualization.Slider("False Negative Rate", 0.1, 0, 1, 0.1),
+)
+
 
 
 model_text_element = IGADText()

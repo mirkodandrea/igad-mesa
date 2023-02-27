@@ -370,4 +370,21 @@ class HouseholdAgent(mg.GeoAgent):
 
         self._status = value
     
+
+    def get_description(self):
+        return {
+            'id': self.unique_id,
+            'damage': f"h: {int(100 * self.house_damage)}% - l: {int(100 * self.livelihood_damage)}%",
+            'status': self.status, 
+            'income': f"{self.income:.2f}", 
+            'awareness': f"{int(100 * self.awareness)}%", 
+            'fear': f"{int(100 * self.fear)}%", 
+            'perception': f"{int(100 * self.perception)}%",
+            'trust': f"{int(100 * self.trust)}%", 
+            'received_flood': self.received_flood,
+            'house_materials': self.house_materials,
+            'obstacles_to_movement': self.obstacles_to_movement,
+            'last_house_damage': f"{int(100 * self.last_house_damage)}%",
+            'last_livelihood_damage': f"{int(self.last_livelihood_damage)}%",
+        }
    
