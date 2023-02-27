@@ -137,8 +137,8 @@ class IGAD(mesa.Model):
 
         print('Early warning at time step', self.steps)
         for agent in self.agents:
-            if agent.flood_prone:
-                agent.receive_early_warning()
+            agent.receive_early_warning()
+                
         for agent in self.agents:                
             agent.check_neighbours_for_evacuation()
             

@@ -9,6 +9,7 @@ from constants import (FLOOD_DAMAGE_MAX, FLOOD_DAMAGE_THRESHOLD, MAX_DISTANCE,
 STATUS_NORMAL = 'normal'
 STATUS_EVACUATED = 'evacuated'
 STATUS_DISPLACED = 'displaced'
+#STATUS_TRAPPED = 'trapped'
 
 LOW_DAMAGE_THRESHOLD = 0.4
 MEDIUM_DAMAGE_THRESHOLD = 0.6
@@ -69,6 +70,9 @@ class HouseholdAgent(mg.GeoAgent):
         self.return_decision()
     
     def return_decision(self):
+        if self.status == STATUS_NORMAL:
+            return
+        
         if self.house_damage < LOW_DAMAGE_THRESHOLD:
             self.status = STATUS_NORMAL
             return
@@ -77,7 +81,8 @@ class HouseholdAgent(mg.GeoAgent):
         """ 
         check household damage and decide status
         """
-        if self.status == STATUS_DISPLACED:
+        if self.status != STATUS_NORMAL:
+            # already displaced or evacuated
             return
 
         if self.house_damage > MEDIUM_DAMAGE_THRESHOLD or \
@@ -127,6 +132,9 @@ class HouseholdAgent(mg.GeoAgent):
         - if household has not perception of risk, prepare
         - if household has perception of risk, evacuate and prepare
         """
+        if not self.flood_prone:
+            return
+        
         if self.status != STATUS_NORMAL:
             # already displaced or evacuated
             # don't receive early warning
@@ -258,7 +266,7 @@ class HouseholdAgent(mg.GeoAgent):
 
             if self.alerted:
                 # trust is reduced by 50% if no one is flooded but household is alerted
-                self.trust = np.clip(self.trust * 0.5, 0, 1)
+                self.trust = np.clip(self.trust * 0.9, 0, 1)
                 # fear is reduced by 10% if no one is flooded but household is alerted
                 self.fear = np.clip(self.fear * 0.9, 0, 1)
             else: # not flooded and not alerted
@@ -295,7 +303,7 @@ class HouseholdAgent(mg.GeoAgent):
                 
                 #[TODO] modulate trust decrease using damage
                 #[TODO] talk about this!
-                self.trust = np.clip(self.trust * 0.3, 0, 1)
+                self.trust = np.clip(self.trust * 0.9, 0, 1)
 
 
         

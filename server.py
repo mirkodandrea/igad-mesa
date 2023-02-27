@@ -72,27 +72,40 @@ def households_draw(agent):
     Portrayal Method for canvas
     """
     portrayal = dict()
-    if isinstance(agent, HouseholdAgent):
-        portrayal["radius"] = "5"
-
-    # calculate color using rgb color space   
-    r = int(255 * agent.house_damage)
-    g = int(255 * (1 - agent.house_damage))
-    b = 0
-
-    portrayal["color"] = ('#%02x%02x%02x' % (r, g, b)).upper()
+    #if isinstance(agent, HouseholdAgent):
+    
 
     if agent.status == 'normal':
-        portrayal["dashArray"] = "1"
+        #portrayal["dashArray"] = "1,3,2,2"
+        portrayal["color"] = "Green"
     elif agent.status == 'displaced':
-        portrayal["dashArray"] = "1, 5"
+        #portrayal["dashArray"] = "1, 5"
+        portrayal["color"] = "Black"
+    elif agent.status == 'evacuated':
+        #portrayal["dashArray"] = "1, 5"
+        portrayal["color"] = "Red"
+
+    agent_radius = 8.0
+    if agent.income < POVERTY_LINE:
+        agent_radius = 5.0
+
+    portrayal["radius"] = agent_radius
+    
+    half_circle_length = agent_radius * 3.14
+    house_damage = agent.house_damage * half_circle_length
+    livelihood_damage = agent.livelihood_damage * half_circle_length
+    house_not_damaged = half_circle_length - house_damage
+    livelihood_not_damaged = half_circle_length - livelihood_damage
+    
+    portrayal["dashArray"] = f"{house_not_damaged}, {house_damage}, {livelihood_not_damaged}, {livelihood_damage}"
+
 
     #"Shape": Can be either "circle", "rect", "arrowHead"
     portrayal["description"] = {
         'id': agent.unique_id,
         'damage': f"h: {int(100 * agent.house_damage)}% - l: {int(100 * agent.livelihood_damage)}%",
         'status': agent.status, 
-        'income': f"{int(agent.income)}", 
+        'income': f"{agent.income:.2f}", 
         'awareness': f"{int(100 * agent.awareness)}%", 
         'fear': f"{int(100 * agent.fear)}%", 
         'perception': f"{int(100 * agent.perception)}%",
