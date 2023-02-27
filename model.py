@@ -187,5 +187,5 @@ class IGAD(mesa.Model):
         
         if EXPORT_TO_CSV:            
             df = self.datacollector.get_agent_vars_dataframe()
-            df.to_csv('data.csv')
+            df.to_csv('output/data.csv')
 
