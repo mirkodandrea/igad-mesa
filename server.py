@@ -79,7 +79,7 @@ bounding_boxes = gpd.read_file('IGAD/BoundingBox20022023/BoundingBox_20022023.sh
 # select only the bounding box of the village
 all_population_data = load_population_data()
 
-trusts = []
+#trusts = []
 incomes = []
 flood_prones = []
 awarenesses = []
@@ -111,10 +111,10 @@ for village in villages:
     village_fears = population_data['fear_of_flood'].values / 3
     village_obstacles_to_movement = (population_data[['vulnerabilities', 'properties']].sum(axis=1) > 4).values
     village_awarenesses = random(n_households)
-    village_trusts = random(n_households)
+    #village_trusts = random(n_households)
 
     positions += village_positions
-    trusts += village_trusts.tolist()
+    #trusts += village_trusts.tolist()
     incomes += village_incomes.tolist()
     flood_prones += village_flood_prones.tolist()
     awarenesses += village_awarenesses.tolist()
@@ -128,7 +128,7 @@ false_negative_rate = 0.0
 
 model_params = dict(
     positions=positions,
-    trusts=trusts,
+    #trusts=trusts,
     incomes=incomes,
     flood_prones=flood_prones,
     events=events,
@@ -138,6 +138,7 @@ model_params = dict(
     fears=fears,
     false_alarm_rate=mesa.visualization.Slider("False Alarm Rate", 0.3, 0, 1, 0.1),
     false_negative_rate=mesa.visualization.Slider("False Negative Rate", 0.1, 0, 1, 0.1),
+    trust=mesa.visualization.Slider("Authority Trust", 0.75, 0, 1, 0.05),
 )
 
 

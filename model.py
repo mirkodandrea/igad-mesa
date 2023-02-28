@@ -5,12 +5,15 @@ import numpy as np
 from agents import HouseholdAgent, STATUS_EVACUATED, STATUS_NORMAL, STATUS_DISPLACED
 
 EXPORT_TO_CSV = True
+RAND_POSITION = False
+
+
 class IGAD(mesa.Model):
     """Model class for the IGAD model."""
     def __init__(
         self, 
         positions=None,
-        trusts=None,
+        #trusts=None,
         incomes=None,
         flood_prones=None,
         events=None,
@@ -20,11 +23,12 @@ class IGAD(mesa.Model):
         obstacles_to_movement=None,
         false_alarm_rate=None,
         false_negative_rate=None,
+        trust=None,
     ):
         """
         Create a new IGAD model.
         :param positions:   List of tuples with the x and y coordinates of each agent
-        :param trusts:      List of trust values for each agent
+        #:param trusts:      List of trust values for each agent
         :param incomes:     List of income values for each agent
         :param flood_prones:    List of flood prone values for each agent
         :param events:      List of events for each agent
@@ -85,19 +89,22 @@ class IGAD(mesa.Model):
 
         for i in range(n_agents):
             x, y = positions[i]
-            x = x + np.random.normal(0, 0.001)
-            y = y + np.random.normal(0, 0.001)
+            if RAND_POSITION:
+                x = x + np.random.normal(0, 0.001)
+                y = y + np.random.normal(0, 0.001)
             household = ac_population.create_agent(
                 Point(x, y), 
                 "H" + str(i)
             )
             # Assign attributes
-            household.trust = trusts[i]
+            
             household.base_income = incomes[i]
             household.flood_prone = bool(flood_prones[i])
             household.awareness = awarenesses[i]
             household.fear = fears[i]
-            household.trust = trusts[i]
+            #household.trust = trusts[i]
+            household.trust = trust
+
             household.house_materials = house_materials[i]
             household.obstacles_to_movement = bool(obstacles_to_movement[i])
 

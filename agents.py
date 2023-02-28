@@ -312,6 +312,9 @@ class HouseholdAgent(mg.GeoAgent):
         """
         fix damage for current household
         """
+        
+        self.livelihood_damage = np.clip(self.livelihood_damage - 0.3, 0, 1)
+
         if self.income <= POVERTY_LINE:
             return
 
@@ -327,7 +330,8 @@ class HouseholdAgent(mg.GeoAgent):
             recovery *= 2.0            
 
         self.house_damage = np.clip(self.house_damage - recovery, 0, 1)
-        self.livelihood_damage = np.clip(self.livelihood_damage - recovery, 0, 1)
+
+        
 
     def fix_neighbours_damage(self):
         """
