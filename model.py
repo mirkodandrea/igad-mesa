@@ -39,6 +39,10 @@ class IGAD(mesa.Model):
         :param false_alarm_rate:    False alarm rate for the model
         :param false_negative_rate: False negative rate for the model
         """
+
+        # Set random seed to reset random sequence
+        np.random.seed(0)
+
         self.schedule = mesa.time.BaseScheduler(self)
         self.space = mg.GeoSpace(crs='epsg:4326', warn_crs_conversion=False)
         self.steps = 0
@@ -62,6 +66,8 @@ class IGAD(mesa.Model):
                 "mean_trust": lambda this: np.mean([a.trust for a in this.agents]),
                 "mean_perception": lambda this: np.mean([a.perception for a in this.agents]),
                 "mean_income": lambda this: np.mean([a.income for a in this.agents]),
+                "mean_awareness": lambda this: np.mean([a.awareness for a in this.agents]),
+                "mean_fear": lambda this: np.mean([a.fear for a in this.agents]),                
             },
             agent_reporters={
                 "status": lambda agent: agent.status,
@@ -135,9 +141,9 @@ class IGAD(mesa.Model):
         """
         emit = False
         if self.__has_floods():    
-            emit = self.random.random() < self.false_negative_rate
+            emit = not self.random.random() <= self.false_negative_rate 
         else:
-            emit = self.random.random() < self.false_alarm_rate
+            emit = self.random.random() <= self.false_alarm_rate
         
         if not emit:
             return 

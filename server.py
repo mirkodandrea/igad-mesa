@@ -40,6 +40,11 @@ def households_draw(agent):
     elif agent.status == 'evacuated':
         #portrayal["dashArray"] = "1, 5"
         portrayal["color"] = "Red"
+    
+    if agent.received_flood:
+        portrayal["fillColor"] = "Blue"
+    else:
+        portrayal["fillColor"] = "White"
 
     agent_radius = 8.0
     if agent.income < POVERTY_LINE:
@@ -64,12 +69,12 @@ def households_draw(agent):
 
 villages = [
     'Al-Gaili', 
-    # 'Wawise Garb', 
-    # 'Wad Ramli Camp', 
-    # 'Eltomaniat', 
-    # 'Al-Shuhada', 
-    # 'Wawise Oum Ojaija', 
-    # 'Wad Ramli'
+    'Wawise Garb', 
+    'Wad Ramli Camp', 
+    'Eltomaniat', 
+    'Al-Shuhada', 
+    'Wawise Oum Ojaija', 
+    'Wad Ramli'
 ]
 
 events = get_events(initial_year=0, stride=MAX_YEARS)
@@ -98,8 +103,9 @@ for village in villages:
     village_lons = settlements.geometry.centroid.x
     village_lats = settlements.geometry.centroid.y
 
-    village_flood_prones = (village_lons - village_lons.min()) / (village_lons.max() - village_lons.min()) < 0.3
-    village_flood_prones = village_flood_prones.values
+    # village_flood_prones = (village_lons - village_lons.min()) / (village_lons.max() - village_lons.min()) < 0.3
+    # village_flood_prones = village_flood_prones.values
+    village_flood_prones = [True] * n_households
     village_positions = list(zip(village_lons, village_lats))
 
     population_data = all_population_data\
@@ -110,13 +116,13 @@ for village in villages:
     village_house_materials = population_data['walls_materials'].values
     village_fears = population_data['fear_of_flood'].values / 3
     village_obstacles_to_movement = (population_data[['vulnerabilities', 'properties']].sum(axis=1) > 4).values
-    village_awarenesses = random(n_households)
+    village_awarenesses = 0.75 + random(n_households) * 0.25
     #village_trusts = random(n_households)
 
     positions += village_positions
     #trusts += village_trusts.tolist()
     incomes += village_incomes.tolist()
-    flood_prones += village_flood_prones.tolist()
+    flood_prones += village_flood_prones #.tolist()
     awarenesses += village_awarenesses.tolist()
     house_materials += village_house_materials.tolist()
     obstacles_to_movement += village_obstacles_to_movement.tolist()
@@ -146,7 +152,7 @@ model_params = dict(
 model_text_element = IGADText()
 map_element = mg.visualization.MapModule(
     households_draw,
-    map_width=800,
+    map_width=900,
     map_height=400,
 )
 
@@ -156,14 +162,19 @@ chart_status = mesa.visualization.ChartModule([{
     },{
         "Label": "n_evacuated",
         "Color": "Red"
-    },{ 
-        "Label": "n_normal",
-        "Color": "Green"
-    },{ 
+    }
+    #,{ 
+    #     "Label": "n_normal",
+    #     "Color": "Green"
+    # }
+    ,{ 
         "Label": "n_flooded",
         "Color": "Blue"
-    }],
-    data_collector_name='datacollector'
+    }
+    ],
+    data_collector_name='datacollector',
+    canvas_height=300, 
+    canvas_width=1200
 )
 
 chart_damage = mesa.visualization.ChartModule([
@@ -183,13 +194,25 @@ chart_damage = mesa.visualization.ChartModule([
         "Label": "mean_trust",
         "Color": "Cyan"
     },
+    # {
+    #     "Label": "mean_income",
+    #     "Color": "Black"
+    # },
     {
-        "Label": "mean_income",
-        "Color": "Black"
+        "Label": "mean_awareness",
+        "Color": "Magenta"
+    },
+    {
+        "Label": "mean_fear",
+        "Color": "Yellow"
     }
 
+
     ],
-    data_collector_name='datacollector'
+    data_collector_name='datacollector',
+    canvas_height=300, 
+    canvas_width=1200
+
 )
 
 

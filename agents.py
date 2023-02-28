@@ -11,8 +11,8 @@ STATUS_EVACUATED = 'evacuated'
 STATUS_DISPLACED = 'displaced'
 #STATUS_TRAPPED = 'trapped'
 
-LOW_DAMAGE_THRESHOLD = 0.4
-MEDIUM_DAMAGE_THRESHOLD = 0.6
+LOW_DAMAGE_THRESHOLD = 0.25
+MEDIUM_DAMAGE_THRESHOLD = 0.7
 
 class HouseholdAgent(mg.GeoAgent):
     """Household Agent."""
@@ -203,7 +203,7 @@ class HouseholdAgent(mg.GeoAgent):
         - damage is increased if household is an informal settlement by 100%
         """
 
-        if flood_value < 10:
+        if flood_value < FLOOD_DAMAGE_THRESHOLD:
             """ nothing happened to this household """
             self.received_flood = False
             return
@@ -262,23 +262,22 @@ class HouseholdAgent(mg.GeoAgent):
 
         if not anyone_flooded:
             # awareness is reduced by 20% if no one is flooded
-            self.awareness = np.clip(self.awareness * 0.8, 0, 1)
+            self.awareness = np.clip(self.awareness - 0.1, 0.3, 1)
+
+            # fear is reduced by 10% if no one is flooded
+            self.fear = np.clip(self.fear - 0.1, 0.3, 1)
 
             if self.alerted:
                 # trust is reduced by 50% if no one is flooded but household is alerted
-                self.trust = np.clip(self.trust * 0.9, 0, 1)
-                # fear is reduced by 10% if no one is flooded but household is alerted
-                self.fear = np.clip(self.fear * 0.9, 0, 1)
-            else: # not flooded and not alerted
-                # reduce fear by 10%
-                self.fear = np.clip(self.fear * 0.9, 0, 1)
+                self.trust = np.clip(self.trust - 0.1, 0, 1)
+
 
         else: # anyone flooded
             # [TODO] check damage of house and livelihood
             max_damage = max(self.last_house_damage, self.last_livelihood_damage)
             if max_damage > LOW_DAMAGE_THRESHOLD:
                 # increase awareness if my damage is over LOW_DAMAGE_THRESHOLD
-                self.awareness = np.clip(self.awareness * 1.4, 0, 1)
+                self.awareness = np.clip(self.awareness + 0.4, 0, 1)
             else:
                 # increase awareness if at least 25% of neighbours have damage over LOW_DAMAGE_THRESHOLD
                 neighbours_high_damage = [neighbour.last_house_damage > LOW_DAMAGE_THRESHOLD for neighbour in neighbours]
@@ -287,26 +286,22 @@ class HouseholdAgent(mg.GeoAgent):
                     # [TODO] think about enabling this only if the household is not flooded
 
                     if random() < self.awareness:  # actually increase awareness with probability higher if already aware
-                        self.awareness = np.clip(self.awareness * 1.4, 0, 1)
+                        self.awareness = np.clip(self.awareness + 0.4, 0, 1)
                     else: # not aware, decrease awareness because of near-miss-event effect
-                        self.awareness = np.clip(self.awareness * 0.9, 0, 1)
-
-
+                        self.awareness = np.clip(self.awareness - 0.1, 0, 1)
 
             if self.alerted: # flooded and alerted
                 self.trust = 1.0
                 #[TODO] modulate fear increase using damage
-                self.fear = np.clip(self.fear * 1.1, 0, 1)
+                self.fear = np.clip(self.fear + 0.1, 0, 1)
             else: # flooded but not alerted
                 #[TODO] modulate fear increase using damage
-                self.fear = np.clip(self.fear * 1.2, 0, 1)
+                self.fear = np.clip(self.fear + 0.2, 0, 1)
                 
                 #[TODO] modulate trust decrease using damage
                 #[TODO] talk about this!
-                self.trust = np.clip(self.trust * 0.9, 0, 1)
+                self.trust = np.clip(self.trust - 0.1, 0, 1)
 
-
-        
 
     def fix_damage(self):
         """
