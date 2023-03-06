@@ -213,7 +213,8 @@ chart_damage = mesa.visualization.ChartModule([
     canvas_width=1200
 )
 
-chart_displacement = mesa.visualization.ChartModule([
+from stacked_bar_chart import StackedBarChartModule
+chart_displacement = StackedBarChartModule([
     {
         "Color": "Red",
         "Label": "displaced_gt_5",
