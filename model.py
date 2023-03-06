@@ -2,7 +2,7 @@ import mesa
 import mesa_geo as mg
 from shapely.geometry import Point
 import numpy as np
-from agents import HouseholdAgent, STATUS_EVACUATED, STATUS_NORMAL, STATUS_DISPLACED
+from agents import HouseholdAgent, STATUS_EVACUATED, STATUS_NORMAL, STATUS_DISPLACED, STATUS_TRAPPED
 
 EXPORT_TO_CSV = True
 RAND_POSITION = False
@@ -24,6 +24,7 @@ class IGAD(mesa.Model):
         false_alarm_rate=None,
         false_negative_rate=None,
         trust=None,
+        government_help=None,
     ):
         """
         Create a new IGAD model.
@@ -38,6 +39,8 @@ class IGAD(mesa.Model):
         :param obstacles_to_movement:   List of obstacles to movement values for each agent
         :param false_alarm_rate:    False alarm rate for the model
         :param false_negative_rate: False negative rate for the model
+        :param trust:   Trust value for the model
+        :param government_help:  Whether the government fixes household damages or not
         """
 
         # Set random seed to reset random sequence
@@ -52,6 +55,7 @@ class IGAD(mesa.Model):
         self.events = events
         self.false_alarm_rate = false_alarm_rate
         self.false_negative_rate = false_negative_rate
+        self.government_help = government_help
         
         
         self.running = True
@@ -60,6 +64,7 @@ class IGAD(mesa.Model):
                 "n_displaced": lambda this: len([a for a in this.agents if a.status == STATUS_DISPLACED]),
                 "n_normal": lambda this: len([a for a in this.agents if a.status == STATUS_NORMAL]),
                 "n_evacuated": lambda this: len([a for a in this.agents if a.status == STATUS_EVACUATED]),
+                "n_trapped": lambda this: len([a for a in this.agents if a.status == STATUS_TRAPPED]),
                 "n_flooded": lambda this: len([a for a in this.agents if a.received_flood]),
                 "mean_house_damage": lambda this: np.mean([a.house_damage for a in this.agents]),
                 "mean_livelihood_damage": lambda this: np.mean([a.livelihood_damage for a in this.agents]),
@@ -67,7 +72,11 @@ class IGAD(mesa.Model):
                 "mean_perception": lambda this: np.mean([a.perception for a in this.agents]),
                 "mean_income": lambda this: np.mean([a.income for a in this.agents]),
                 "mean_awareness": lambda this: np.mean([a.awareness for a in this.agents]),
-                "mean_fear": lambda this: np.mean([a.fear for a in this.agents]),                
+                "mean_fear": lambda this: np.mean([a.fear for a in this.agents]),
+                "displaced_lte_2": lambda this: sum([1 <= a.displacement_time <= 2  for a in this.agents]),
+                "displaced_lte_5": lambda this: sum([2 < a.displacement_time <= 5 for a in this.agents]),
+                "displaced_gt_5": lambda this: sum([ a.displacement_time > 5 for a in this.agents]),
+
             },
             agent_reporters={
                 "status": lambda agent: agent.status,
@@ -78,6 +87,7 @@ class IGAD(mesa.Model):
                 "trust": lambda agent: agent.trust,
                 "perception": lambda agent: agent.perception,
                 "income": lambda agent: agent.income,
+                "displacement_time": lambda agent: agent.displacement_time,
             },
         )
         self.agents = []
@@ -174,9 +184,10 @@ class IGAD(mesa.Model):
     def fix_damages(self):
         """
         Fix damages for all agents
-        """
+        """        
+
         for agent in self.agents:
-            agent.fix_damage()
+            agent.fix_damage(self.government_help)
 
         for agent in self.agents:
             agent.fix_neighbours_damage()

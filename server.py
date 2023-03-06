@@ -5,7 +5,8 @@ import pandas as pd
 from numpy.random import normal, pareto, poisson, random
 
 import mesa
-from agents import HouseholdAgent
+
+from agents import HouseholdAgent, STATUS_EVACUATED, STATUS_NORMAL, STATUS_DISPLACED, STATUS_TRAPPED
 from constants import MAX_YEARS, POVERTY_LINE
 from model import IGAD
 from utils import get_events, load_population_data
@@ -31,16 +32,15 @@ def households_draw(agent):
         return portrayal
     
 
-    if agent.status == 'normal':
-        #portrayal["dashArray"] = "1,3,2,2"
+    if agent.status == STATUS_NORMAL:
         portrayal["color"] = "Green"
-    elif agent.status == 'displaced':
-        #portrayal["dashArray"] = "1, 5"
+    elif agent.status == STATUS_DISPLACED:
         portrayal["color"] = "Black"
-    elif agent.status == 'evacuated':
-        #portrayal["dashArray"] = "1, 5"
+    elif agent.status == STATUS_EVACUATED:
         portrayal["color"] = "Red"
-    
+    elif agent.status == STATUS_TRAPPED:
+        portrayal["color"] = "Yellow"
+
     if agent.received_flood:
         portrayal["fillColor"] = "Blue"
     else:
@@ -50,8 +50,12 @@ def households_draw(agent):
     if agent.income < POVERTY_LINE:
         agent_radius = 5.0
 
+    if agent.prepared:
+        portrayal['weight'] = 3.0
+    else:
+        portrayal['weight'] = 1.0
+
     portrayal["radius"] = agent_radius
-    
     half_circle_length = agent_radius * np.pi
     house_damage = agent.house_damage * half_circle_length
     livelihood_damage = agent.livelihood_damage * half_circle_length
@@ -69,12 +73,12 @@ def households_draw(agent):
 
 villages = [
     'Al-Gaili', 
-    'Wawise Garb', 
-    'Wad Ramli Camp', 
-    'Eltomaniat', 
-    'Al-Shuhada', 
-    'Wawise Oum Ojaija', 
-    'Wad Ramli'
+    # 'Wawise Garb', 
+    # 'Wad Ramli Camp', 
+    # 'Eltomaniat', 
+    # 'Al-Shuhada', 
+    # 'Wawise Oum Ojaija', 
+    # 'Wad Ramli'
 ]
 
 events = get_events(initial_year=0, stride=MAX_YEARS)
@@ -145,6 +149,7 @@ model_params = dict(
     false_alarm_rate=mesa.visualization.Slider("False Alarm Rate", 0.3, 0, 1, 0.1),
     false_negative_rate=mesa.visualization.Slider("False Negative Rate", 0.1, 0, 1, 0.1),
     trust=mesa.visualization.Slider("Authority Trust", 0.75, 0, 1, 0.05),
+    government_help=mesa.visualization.Slider("Government Help", 0.0, 0, 1, 0.05),
 )
 
 
@@ -163,10 +168,10 @@ chart_status = mesa.visualization.ChartModule([{
         "Label": "n_evacuated",
         "Color": "Red"
     }
-    #,{ 
-    #     "Label": "n_normal",
-    #     "Color": "Green"
-    # }
+    ,{ 
+         "Label": "n_trapped",
+         "Color": "Yellow"
+    }
     ,{ 
         "Label": "n_flooded",
         "Color": "Blue"
@@ -194,10 +199,6 @@ chart_damage = mesa.visualization.ChartModule([
         "Label": "mean_trust",
         "Color": "Cyan"
     },
-    # {
-    #     "Label": "mean_income",
-    #     "Color": "Black"
-    # },
     {
         "Label": "mean_awareness",
         "Color": "Magenta"
@@ -205,20 +206,38 @@ chart_damage = mesa.visualization.ChartModule([
     {
         "Label": "mean_fear",
         "Color": "Yellow"
-    }
-
-
+    },
     ],
     data_collector_name='datacollector',
     canvas_height=300, 
     canvas_width=1200
+)
 
+chart_displacement = mesa.visualization.ChartModule([
+    {
+        "Color": "Red",
+        "Label": "displaced_gt_5",
+    },
+    {
+        "Color": "Orange",
+        "Label": "displaced_lte_5",
+
+    },
+    {
+        "Color": "Yellow",
+        "Label": "displaced_lte_2",
+
+    }
+    ],
+    data_collector_name='datacollector',
+    canvas_height=300,  
+    canvas_width=1200
 )
 
 
 server = mesa.visualization.ModularServer(
     IGAD,
-    [map_element, model_text_element, chart_status, chart_damage],
-    "Basic agent-based IGAD model",
+    [map_element, model_text_element, chart_status, chart_damage, chart_displacement],
+    "Agent-based IGAD model",
     model_params,
 )
