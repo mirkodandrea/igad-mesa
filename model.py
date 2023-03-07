@@ -1,46 +1,58 @@
-import mesa
+from typing import List
+
+import geopandas as gpd
 import mesa_geo as mg
-from shapely.geometry import Point
 import numpy as np
-from agents import HouseholdAgent, STATUS_EVACUATED, STATUS_NORMAL, STATUS_DISPLACED, STATUS_TRAPPED
+from numpy.random import random
+import pandas as pd
+from shapely.geometry import Point
+
+import mesa
+from agents import (STATUS_DISPLACED, STATUS_EVACUATED, STATUS_NORMAL,
+                    STATUS_TRAPPED, HouseholdAgent)
+from utils import get_events, load_population_data
 
 EXPORT_TO_CSV = True
 RAND_POSITION = False
+
+VILLAGES = [
+    'Al-Gaili', 
+    'Wawise Garb', 
+    'Wad Ramli Camp', 
+    'Eltomaniat', 
+    'Al-Shuhada', 
+    'Wawise Oum Ojaija', 
+    'Wad Ramli'
+]
+
+ALL_SETTLEMENTS = gpd.read_file('IGAD/settlements_grid_wdst_sampled.gpkg').to_crs(epsg=4326)
+BOUNDING_BOXES = gpd.read_file('IGAD/BoundingBox20022023/BoundingBox_20022023.shp').to_crs(epsg=4326)
+# select only the bounding box of the village
+ALL_POPULATION_DATA = load_population_data()
 
 
 class IGAD(mesa.Model):
     """Model class for the IGAD model."""
     def __init__(
         self, 
-        positions=None,
-        #trusts=None,
-        incomes=None,
-        flood_prones=None,
-        events=None,
-        awarenesses=None,
-        fears= None,
-        house_materials=None,
-        obstacles_to_movement=None,
         false_alarm_rate=None,
         false_negative_rate=None,
         trust=None,
         government_help=None,
+        start_year=None,
+        duration=None,
+        **kwargs
     ):
         """
         Create a new IGAD model.
         :param positions:   List of tuples with the x and y coordinates of each agent
-        #:param trusts:      List of trust values for each agent
-        :param incomes:     List of income values for each agent
-        :param flood_prones:    List of flood prone values for each agent
-        :param events:      List of events for each agent
-        :param awarenesses: List of awareness values for each agent
-        :param fears:       List of fear values for each agent
-        :param house_materials: List of house material values for each agent
-        :param obstacles_to_movement:   List of obstacles to movement values for each agent
         :param false_alarm_rate:    False alarm rate for the model
         :param false_negative_rate: False negative rate for the model
         :param trust:   Trust value for the model
         :param government_help:  Whether the government fixes household damages or not
+        :param start_year:  Start year of the model
+        :param duration:    Duration of the flood event
+        :param **kwargs:   Additional keyword arguments
         """
 
         # Set random seed to reset random sequence
@@ -51,21 +63,74 @@ class IGAD(mesa.Model):
         self.steps = 0
         self.counts = None
 
+        # extract villages from kwargs
+        active_villages = [
+            village 
+            for n, village in enumerate(VILLAGES)
+            if 
+            f'village_{n}' in kwargs and
+            kwargs[f'village_{n}'] == True
+        ]
+
+        self.load_data(start_year=start_year, duration=duration, villages=active_villages)
+
         # IGAD MODEL PARAMETERS
-        self.events = events
         self.false_alarm_rate = false_alarm_rate
         self.false_negative_rate = false_negative_rate
         self.government_help = government_help
-        
+        self.duration = duration
         
         self.running = True
+        self.create_datacollector()
+        self.agents = []
+
+        # Generate PersonAgent population
+        ac_population = mg.AgentCreator(
+            HouseholdAgent,
+            model=self,
+            crs=self.space.crs,
+            agent_kwargs={},
+        )
+
+        # Create agents and assign them to the space, with slight randomization of the position
+        n_agents = len(self.positions)
+
+        for i in range(n_agents):
+            x, y = self.positions[i]
+            if RAND_POSITION:
+                x = x + np.random.normal(0, 0.001)
+                y = y + np.random.normal(0, 0.001)
+            household = ac_population.create_agent(
+                Point(x, y), 
+                "H" + str(i)
+            )
+            # Assign attributes
+            
+            household.base_income = self.incomes[i]
+            household.flood_prone = bool(self.flood_prones[i])
+            household.awareness = self.awarenesses[i]
+            household.fear = self.fears[i]
+            #household.trust = trusts[i]
+            household.trust = trust
+            household.household_size = self.households_size[i]
+            household.house_materials = self.house_materials[i]
+            household.obstacles_to_movement = bool(self.obstacles_to_movement[i])
+
+            self.space.add_agents(household)
+            self.schedule.add(household)
+            self.agents.append(household)
+
+        self.datacollector.collect(self)
+
+    def create_datacollector(self):
+        """Create the datacollector."""
         self.datacollector = mesa.DataCollector(
             model_reporters={
                 "n_displaced": lambda this: len([a for a in this.agents if a.status == STATUS_DISPLACED]),
                 "n_normal": lambda this: len([a for a in this.agents if a.status == STATUS_NORMAL]),
                 "n_evacuated": lambda this: len([a for a in this.agents if a.status == STATUS_EVACUATED]),
                 "n_trapped": lambda this: len([a for a in this.agents if a.status == STATUS_TRAPPED]),
-                "n_flooded": lambda this: len([a for a in this.agents if a.received_flood]),
+                
                 "mean_house_damage": lambda this: np.mean([a.house_damage for a in this.agents]),
                 "mean_livelihood_damage": lambda this: np.mean([a.livelihood_damage for a in this.agents]),
                 "mean_trust": lambda this: np.mean([a.trust for a in this.agents]),
@@ -76,6 +141,9 @@ class IGAD(mesa.Model):
                 "displaced_lte_2": lambda this: sum([1 <= a.displacement_time <= 2  for a in this.agents]),
                 "displaced_lte_5": lambda this: sum([2 < a.displacement_time <= 5 for a in this.agents]),
                 "displaced_gt_5": lambda this: sum([ a.displacement_time > 5 for a in this.agents]),
+
+                "n_flooded": lambda this: sum([a.household_size for a in this.agents if a.received_flood]),
+                "affected_population": lambda this: sum([a.household_size for a in this.agents if a.received_flood and a.status in [STATUS_NORMAL, STATUS_TRAPPED]]),
 
             },
             agent_reporters={
@@ -90,45 +158,64 @@ class IGAD(mesa.Model):
                 "displacement_time": lambda agent: agent.displacement_time,
             },
         )
-        self.agents = []
 
-        # Generate PersonAgent population
-        ac_population = mg.AgentCreator(
-            HouseholdAgent,
-            model=self,
-            crs=self.space.crs,
-            agent_kwargs={},
-        )
+    def load_data(self, start_year: int, duration: int, villages: List[str]):
+        """
+        Load data from population, settlements and flood events.
+        """
+        self.events = get_events(initial_year=start_year, stride=duration)
 
-        # Create agents and assign them to the space, with slight randomization of the position
-        n_agents = len(positions)
+        self.incomes = []
+        self.flood_prones = []
+        self.awarenesses = []
+        self.house_materials = []
+        self.households_size = []
+        self.obstacles_to_movement = []
+        self.fears = []
+        self.positions = []
 
-        for i in range(n_agents):
-            x, y = positions[i]
-            if RAND_POSITION:
-                x = x + np.random.normal(0, 0.001)
-                y = y + np.random.normal(0, 0.001)
-            household = ac_population.create_agent(
-                Point(x, y), 
-                "H" + str(i)
-            )
-            # Assign attributes
+        for village in villages:
+            bounding_box = BOUNDING_BOXES.query('village == @village').geometry
+            settlements = ALL_SETTLEMENTS[ALL_SETTLEMENTS.geometry.within(bounding_box.unary_union)]
+            # resample settlements to 1/10 of the original
             
-            household.base_income = incomes[i]
-            household.flood_prone = bool(flood_prones[i])
-            household.awareness = awarenesses[i]
-            household.fear = fears[i]
-            #household.trust = trusts[i]
-            household.trust = trust
+            n_households = len(settlements)
 
-            household.house_materials = house_materials[i]
-            household.obstacles_to_movement = bool(obstacles_to_movement[i])
+            village_lons = settlements.geometry.centroid.x
+            village_lats = settlements.geometry.centroid.y
 
-            self.space.add_agents(household)
-            self.schedule.add(household)
-            self.agents.append(household)
+            # village_flood_prones = (village_lons - village_lons.min()) / (village_lons.max() - village_lons.min()) < 0.3
+            # village_flood_prones = village_flood_prones.values
+            village_flood_prones = [True] * n_households
+            village_positions = list(zip(village_lons, village_lats))
 
-        self.datacollector.collect(self)
+            population_data = ALL_POPULATION_DATA\
+                    .query('village == @village')\
+                    .sample(n_households, replace=True)
+                
+            village_incomes = population_data['income'].apply(lambda x: (x + random())**1.3).values
+            village_house_materials = population_data['walls_materials'].values
+            village_fears = population_data['fear_of_flood'].values / 3
+
+            village_household_size = population_data['household_size'].values
+            
+            village_obstacles_to_movement = \
+                (population_data[['vulnerabilities', 'properties']].sum(axis=1) > 4).values | \
+                population_data['household_size'].values > 5
+            
+            village_awarenesses = 0.75 + random(n_households) * 0.25
+            
+
+            self.positions += village_positions
+            #trusts += village_trusts.tolist()
+            self.incomes += village_incomes.tolist()
+            self.flood_prones += village_flood_prones #.tolist()
+            self.awarenesses += village_awarenesses.tolist()
+            self.house_materials += village_house_materials.tolist()
+            self.households_size += village_household_size.tolist()
+            self.obstacles_to_movement += village_obstacles_to_movement.tolist()
+            self.fears += village_fears.tolist()
+
 
     def __has_floods(self):
         """
@@ -212,4 +299,7 @@ class IGAD(mesa.Model):
         if EXPORT_TO_CSV:            
             df = self.datacollector.get_agent_vars_dataframe()
             df.to_csv('output/data.csv')
+
+        if self.steps >= self.duration:
+            self.running = False
 

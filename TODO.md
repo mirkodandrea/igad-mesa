@@ -1,8 +1,7 @@
 TODO
 -------------------------------------------------------------------------
 
-+ terminare la simulazione dopo n step
-+ caricare diverse storie
++ ~~caricare diverse storie~~
 + implementare politiche
 + imbastire notebook di analisi risultati. Confrontare: 
   - displacement_time
@@ -15,6 +14,11 @@ TODO
 + refactoring e cleanup
 + utilizzar step scheduler
 
++ ~~caricamento dati parametrico con slider~~
++ ~~durata parametrica~~
+
++ generazione awareness da questionari
+  
 
 -------------------------------------------------------------------------
 in futuro:

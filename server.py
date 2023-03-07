@@ -1,27 +1,13 @@
-import geopandas as gpd
 import mesa_geo as mg
 import numpy as np
-import pandas as pd
-from numpy.random import normal, pareto, poisson, random
 
 import mesa
+from agents import (STATUS_DISPLACED, STATUS_EVACUATED, STATUS_NORMAL,
+                    STATUS_TRAPPED, HouseholdAgent)
+from constants import POVERTY_LINE
+from model import IGAD, VILLAGES
+from stacked_bar_chart import StackedBarChartModule
 
-from agents import HouseholdAgent, STATUS_EVACUATED, STATUS_NORMAL, STATUS_DISPLACED, STATUS_TRAPPED
-from constants import MAX_YEARS, POVERTY_LINE
-from model import IGAD
-from utils import get_events, load_population_data
-
-
-class IGADText(mesa.visualization.TextElement):
-    """
-    Display a text count of how many steps have been taken
-    """
-    def __init__(self):
-        pass
-
-    def render(self, model):
-        return "Steps: " + str(model.steps)
-    
 
 def households_draw(agent):
     """
@@ -33,18 +19,18 @@ def households_draw(agent):
     
 
     if agent.status == STATUS_NORMAL:
-        portrayal["color"] = "Green"
+        portrayal["fillColor"] = "Green"
     elif agent.status == STATUS_DISPLACED:
-        portrayal["color"] = "Black"
+        portrayal["fillColor"] = "Black"
     elif agent.status == STATUS_EVACUATED:
-        portrayal["color"] = "Red"
+        portrayal["fillColor"] = "Red"
     elif agent.status == STATUS_TRAPPED:
-        portrayal["color"] = "Yellow"
+        portrayal["fillColor"] = "Yellow"
 
     if agent.received_flood:
-        portrayal["fillColor"] = "Blue"
+        portrayal["color"] = "Blue"
     else:
-        portrayal["fillColor"] = "White"
+        portrayal["color"] = "Gray"
 
     agent_radius = 8.0
     if agent.income < POVERTY_LINE:
@@ -71,97 +57,40 @@ def households_draw(agent):
     return portrayal
 
 
-villages = [
-    'Al-Gaili', 
-    # 'Wawise Garb', 
-    # 'Wad Ramli Camp', 
-    # 'Eltomaniat', 
-    # 'Al-Shuhada', 
-    # 'Wawise Oum Ojaija', 
-    # 'Wad Ramli'
-]
 
-events = get_events(initial_year=0, stride=MAX_YEARS)
-
-all_settlements = gpd.read_file('IGAD/settlements_grid_wdst_sampled.gpkg').to_crs(epsg=4326)
-bounding_boxes = gpd.read_file('IGAD/BoundingBox20022023/BoundingBox_20022023.shp').to_crs(epsg=4326)
-# select only the bounding box of the village
-all_population_data = load_population_data()
-
-#trusts = []
-incomes = []
-flood_prones = []
-awarenesses = []
-house_materials = []
-obstacles_to_movement = []
-fears = []
-positions = []
-
-for village in villages:
-    bounding_box = bounding_boxes.query('village == @village').geometry
-    settlements = all_settlements[all_settlements.geometry.within(bounding_box.unary_union)]
-    # resample settlements to 1/10 of the original
-    
-    n_households = len(settlements)
-
-    village_lons = settlements.geometry.centroid.x
-    village_lats = settlements.geometry.centroid.y
-
-    # village_flood_prones = (village_lons - village_lons.min()) / (village_lons.max() - village_lons.min()) < 0.3
-    # village_flood_prones = village_flood_prones.values
-    village_flood_prones = [True] * n_households
-    village_positions = list(zip(village_lons, village_lats))
-
-    population_data = all_population_data\
-            .query('village == @village')\
-            .sample(n_households, replace=True)
-        
-    village_incomes = population_data['income'].apply(lambda x: (x + random())**1.3).values
-    village_house_materials = population_data['walls_materials'].values
-    village_fears = population_data['fear_of_flood'].values / 3
-    village_obstacles_to_movement = (population_data[['vulnerabilities', 'properties']].sum(axis=1) > 4).values
-    village_awarenesses = 0.75 + random(n_households) * 0.25
-    #village_trusts = random(n_households)
-
-    positions += village_positions
-    #trusts += village_trusts.tolist()
-    incomes += village_incomes.tolist()
-    flood_prones += village_flood_prones #.tolist()
-    awarenesses += village_awarenesses.tolist()
-    house_materials += village_house_materials.tolist()
-    obstacles_to_movement += village_obstacles_to_movement.tolist()
-    fears += village_fears.tolist()
-
-
-false_alarm_rate = 0.3
-false_negative_rate = 0.0
 
 model_params = dict(
-    positions=positions,
-    #trusts=trusts,
-    incomes=incomes,
-    flood_prones=flood_prones,
-    events=events,
-    awarenesses=awarenesses,
-    house_materials=house_materials,
-    obstacles_to_movement=obstacles_to_movement,
-    fears=fears,
+    _model_params=mesa.visualization.StaticText("Model Parameters"),
+    
     false_alarm_rate=mesa.visualization.Slider("False Alarm Rate", 0.3, 0, 1, 0.1),
     false_negative_rate=mesa.visualization.Slider("False Negative Rate", 0.1, 0, 1, 0.1),
     trust=mesa.visualization.Slider("Authority Trust", 0.75, 0, 1, 0.05),
     government_help=mesa.visualization.Slider("Government Help", 0.0, 0, 1, 0.05),
+    
+    _events_params=mesa.visualization.StaticText("Events Parameters"),
+    start_year=mesa.visualization.Slider("Start Year", 0, 0, 1000, 1),
+    duration=mesa.visualization.Slider("Simulation Duration", 10, 5, 100, 1),
+    
+    _active_villages=mesa.visualization.StaticText("Active Villages"),
+    ** {
+        f'village_{n}': mesa.visualization.Checkbox(f"Village {village_name}", True) 
+        for n, village_name in enumerate(VILLAGES)
+    }
+    
 )
 
-
-
-model_text_element = IGADText()
 map_element = mg.visualization.MapModule(
     households_draw,
     map_width=900,
     map_height=400,
 )
 
-chart_status = mesa.visualization.ChartModule([{
+chart_status = StackedBarChartModule([
+    {
+        "Label": "n_normal",
+        "Color": "Green"
+    },
+    {
         "Label": "n_displaced",
         "Color": "Black"
     },{
@@ -171,10 +100,20 @@ chart_status = mesa.visualization.ChartModule([{
     ,{ 
          "Label": "n_trapped",
          "Color": "Yellow"
-    }
-    ,{ 
+    }],
+    data_collector_name='datacollector',
+    canvas_height=300, 
+    canvas_width=1200
+)
+
+chart_affected = mesa.visualization.ChartModule([
+    { 
         "Label": "n_flooded",
         "Color": "Blue"
+    },
+    {
+        "Label": "affected_population",
+        "Color": "Red"
     }
     ],
     data_collector_name='datacollector',
@@ -182,7 +121,7 @@ chart_status = mesa.visualization.ChartModule([{
     canvas_width=1200
 )
 
-chart_damage = mesa.visualization.ChartModule([
+chart_stats = mesa.visualization.ChartModule([
     {
         "Label": "mean_house_damage",
         "Color": "Red"
@@ -213,7 +152,7 @@ chart_damage = mesa.visualization.ChartModule([
     canvas_width=1200
 )
 
-from stacked_bar_chart import StackedBarChartModule
+
 chart_displacement = StackedBarChartModule([
     {
         "Color": "Red",
@@ -238,7 +177,7 @@ chart_displacement = StackedBarChartModule([
 
 server = mesa.visualization.ModularServer(
     IGAD,
-    [map_element, model_text_element, chart_status, chart_damage, chart_displacement],
+    [map_element, chart_status, chart_affected, chart_stats, chart_displacement],
     "Agent-based IGAD model",
     model_params,
 )

@@ -12,10 +12,11 @@ def get_events(initial_year, stride=None):
             with rio.open(f'IGAD/Maps/SD_30mHazardMap_{row.EventID:0>4d}.tif') as f:
                 flood_data = f.read(1)
 
-            if year not in events:
-                events[year] = []
+            relative_year = year - initial_year
+            if relative_year not in events:
+                events[relative_year] = []
 
-            events[year - initial_year].append(
+            events[relative_year].append(
                 dict(
                     data=flood_data,
                     year=row.Year,
