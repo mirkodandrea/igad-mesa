@@ -81,8 +81,8 @@ model_params = dict(
 
 map_element = mg.visualization.MapModule(
     households_draw,
-    map_width=900,
-    map_height=400,
+    map_width=300,
+    map_height=900,
 )
 
 chart_status = StackedBarChartModule([
@@ -174,10 +174,26 @@ chart_displacement = StackedBarChartModule([
     canvas_width=1200
 )
 
+from grid_layout import GridLayoutModule
+
+
+gridParams = {
+    "templateRows": 'repeat(5, 1fr)',
+    "templateCols": '0.3fr repeat(4, 1fr)',
+    "gridAreas": [
+        '1 / 1 / 2 / 6',
+        '2 / 1 / 6 / 3',
+        '2 / 3 / 3 / 6',
+        '3 / 3 / 4 / 6',
+        '4 / 3 / 5 / 6',
+        '5 / 3 / 6 / 6' 
+    ]
+}
+
 
 server = mesa.visualization.ModularServer(
     IGAD,
-    [map_element, chart_status, chart_affected, chart_stats, chart_displacement],
+    [GridLayoutModule(gridParams), map_element, chart_status, chart_affected, chart_stats, chart_displacement],
     "Agent-based IGAD model",
     model_params,
 )
