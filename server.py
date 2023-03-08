@@ -64,10 +64,11 @@ def households_draw(agent):
 model_params = dict(
     _model_params=mesa.visualization.StaticText("Model Parameters"),
     
+    do_early_warning=mesa.visualization.Checkbox("Early Warning", False),
     false_alarm_rate=mesa.visualization.Slider("False Alarm Rate", 0.3, 0, 1, 0.1),
     false_negative_rate=mesa.visualization.Slider("False Negative Rate", 0.1, 0, 1, 0.1),
-    trust=mesa.visualization.Slider("Authority Trust", 0.75, 0, 1, 0.05),
-
+    trust=mesa.visualization.Slider("Initial authority Trust", 0.75, 0, 1, 0.05),
+    
     house_repair_program=mesa.visualization.Slider("House Repair Program", 0.0, 0, 1, 0.1),
     house_improvement_program=mesa.visualization.Checkbox("House Improve Program", False),
     basic_income_program=mesa.visualization.Checkbox("Basic Income Program", False),
@@ -88,7 +89,7 @@ model_params = dict(
 
 map_element = mg.visualization.MapModule(
     households_draw,
-    map_width=300,
+    map_width=350,
     map_height=900,
 )
 

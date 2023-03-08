@@ -38,6 +38,7 @@ class IGAD(mesa.Model):
         false_alarm_rate=None,
         false_negative_rate=None,
         trust=None,
+        do_early_warning=None,
         house_repair_program=None,
         house_improvement_program=None,
         basic_income_program=None,
@@ -70,6 +71,7 @@ class IGAD(mesa.Model):
         self.counts = None
 
         # active government programs
+        self.do_early_warning = do_early_warning
         self.house_repair_program = house_repair_program
         self.basic_income_program = basic_income_program
         self.awareness_program = awareness_program
@@ -247,6 +249,9 @@ class IGAD(mesa.Model):
         If there is a flood event in time t, emit early warning with probability 1 - false_negative_rate
         If there is no flood event in time t, emit early warning with probability false_alarm_rate        
         """
+        if not self.do_early_warning:
+            return
+            
         emit = False
         if self.__has_floods():    
             emit = not self.random.random() <= self.false_negative_rate 
