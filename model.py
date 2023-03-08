@@ -38,7 +38,8 @@ class IGAD(mesa.Model):
         false_alarm_rate=None,
         false_negative_rate=None,
         trust=None,
-        government_help=None,
+        house_repair_program=None,
+        house_improvement_program=None,
         basic_income_program=None,
         awareness_program=None,
         start_year=None,
@@ -51,8 +52,10 @@ class IGAD(mesa.Model):
         :param false_alarm_rate:    False alarm rate for the model
         :param false_negative_rate: False negative rate for the model
         :param trust:   Trust value for the model
-        :param government_help:  Whether the government fixes household damages or not
-        :param basic_income_program:    Whether the government provides a basic income or not
+        :param house_repair_program: % of repaired houses 
+        :param house_improvement_program: whether the government provides house improvement (e.g. change materials)
+        :param basic_income_program: Whether the government provides a basic income or not
+        :param awareness_program: Whether the government provides awareness programs or not
         :param start_year:  Start year of the model
         :param duration:    Duration of the flood event
         :param **kwargs:   Additional keyword arguments
@@ -66,8 +69,11 @@ class IGAD(mesa.Model):
         self.steps = 0
         self.counts = None
 
+        # active government programs
+        self.house_repair_program = house_repair_program
         self.basic_income_program = basic_income_program
         self.awareness_program = awareness_program
+        self.house_improvement_program = house_improvement_program
 
         # extract villages from kwargs
         active_villages = [
@@ -77,13 +83,12 @@ class IGAD(mesa.Model):
             f'village_{n}' in kwargs and
             kwargs[f'village_{n}'] == True
         ]
-
         self.load_data(start_year=start_year, duration=duration, villages=active_villages)
 
         # IGAD MODEL PARAMETERS
         self.false_alarm_rate = false_alarm_rate
         self.false_negative_rate = false_negative_rate
-        self.government_help = government_help
+        
         self.duration = duration
         
         self.running = True
@@ -280,7 +285,7 @@ class IGAD(mesa.Model):
         """        
 
         for agent in self.agents:
-            agent.fix_damage(self.government_help)
+            agent.fix_damage(self.house_repair_program)
 
         for agent in self.agents:
             agent.fix_neighbours_damage()

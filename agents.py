@@ -340,16 +340,22 @@ class HouseholdAgent(mg.GeoAgent):
         """
         fix damage for current household
         """
-        
         self.livelihood_damage = np.clip(self.livelihood_damage - 0.3, 0, 1)
 
-        if government_help > 0:
-            # if government help is available, try to use it to fix damage if damage is above MEDIUM_DAMAGE_THRESHOLD
-            if self.house_damage > MEDIUM_DAMAGE_THRESHOLD:
-                if random() < government_help:
-                    # government help is used to fix damage 100%
-                    self.house_damage = 0
-                    return
+        if government_help <= 0:
+            return
+
+        # if government help is available, try to use it to fix damage if damage is above MEDIUM_DAMAGE_THRESHOLD
+        if self.house_damage > MEDIUM_DAMAGE_THRESHOLD:
+            if random() < government_help:
+                # government help is used to fix damage 100%
+                self.house_damage = 0
+
+                if self.model.house_improvement_program:
+                    # if house improvement program is active, house materials are improved
+                    self.house_materials = 'Concrete'
+                    
+                return
 
                 
 
