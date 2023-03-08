@@ -6,7 +6,9 @@ from agents import (STATUS_DISPLACED, STATUS_EVACUATED, STATUS_NORMAL,
                     STATUS_TRAPPED, HouseholdAgent)
 from constants import POVERTY_LINE
 from model import IGAD, VILLAGES
-from stacked_bar_chart import StackedBarChartModule
+
+from visualizers.stacked_bar_chart import StackedBarChartModule
+from visualizers.grid_layout import GridLayoutModule
 
 
 def households_draw(agent):
@@ -65,15 +67,19 @@ model_params = dict(
     false_alarm_rate=mesa.visualization.Slider("False Alarm Rate", 0.3, 0, 1, 0.1),
     false_negative_rate=mesa.visualization.Slider("False Negative Rate", 0.1, 0, 1, 0.1),
     trust=mesa.visualization.Slider("Authority Trust", 0.75, 0, 1, 0.05),
+
     government_help=mesa.visualization.Slider("Government Help", 0.0, 0, 1, 0.05),
+    basic_income_program=mesa.visualization.Checkbox("Basic Income Program", False),
+    awareness_program=mesa.visualization.Checkbox("Awareness Program", False),
     
+    _separator=mesa.visualization.StaticText("_______________________________"),
     _events_params=mesa.visualization.StaticText("Events Parameters"),
     start_year=mesa.visualization.Slider("Start Year", 0, 0, 1000, 1),
     duration=mesa.visualization.Slider("Simulation Duration", 10, 5, 100, 1),
     
     _active_villages=mesa.visualization.StaticText("Active Villages"),
     ** {
-        f'village_{n}': mesa.visualization.Checkbox(f"Village {village_name}", True) 
+        f'village_{n}': mesa.visualization.Checkbox(f"{village_name}", True) 
         for n, village_name in enumerate(VILLAGES)
     }
     
@@ -174,7 +180,7 @@ chart_displacement = StackedBarChartModule([
     canvas_width=1200
 )
 
-from grid_layout import GridLayoutModule
+
 
 
 gridParams = {
