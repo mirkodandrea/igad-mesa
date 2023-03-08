@@ -292,9 +292,10 @@ class HouseholdAgent(mg.GeoAgent):
             self.received_flood or \
             any(neighbours_flooded)
 
+        MIN_AWARENESS = 0.5 if self.model.awareness_program else 0.3
         if not anyone_flooded:
             # awareness is reduced by 20% if no one is flooded
-            self.awareness = np.clip(self.awareness - 0.1, 0.3, 1)
+            self.awareness = np.clip(self.awareness - 0.1, MIN_AWARENESS, 1)
 
             # fear is reduced by 10% if no one is flooded
             self.fear = np.clip(self.fear - 0.1, 0.3, 1)
@@ -309,7 +310,7 @@ class HouseholdAgent(mg.GeoAgent):
             max_damage = max(self.last_house_damage, self.last_livelihood_damage)
             if max_damage > LOW_DAMAGE_THRESHOLD:
                 # increase awareness if my damage is over LOW_DAMAGE_THRESHOLD
-                self.awareness = np.clip(self.awareness + 0.4, 0, 1)
+                self.awareness = np.clip(self.awareness + 0.4, MIN_AWARENESS, 1)
             else:
                 # increase awareness if at least 25% of neighbours have damage over LOW_DAMAGE_THRESHOLD
                 neighbours_high_damage = [neighbour.last_house_damage > LOW_DAMAGE_THRESHOLD for neighbour in neighbours]
@@ -318,9 +319,9 @@ class HouseholdAgent(mg.GeoAgent):
                     # [TODO] think about enabling this only if the household is not flooded
 
                     if random() < self.awareness:  # actually increase awareness with probability higher if already aware
-                        self.awareness = np.clip(self.awareness + 0.4, 0, 1)
+                        self.awareness = np.clip(self.awareness + 0.4, MIN_AWARENESS, 1)
                     else: # not aware, decrease awareness because of near-miss-event effect
-                        self.awareness = np.clip(self.awareness - 0.1, 0, 1)
+                        self.awareness = np.clip(self.awareness - 0.1, MIN_AWARENESS, 1)
 
             if self.alerted: # flooded and alerted
                 self.trust = 1.0
@@ -401,7 +402,15 @@ class HouseholdAgent(mg.GeoAgent):
     
     @property
     def income(self):
-        return self.base_income * (1 - self.livelihood_damage)
+        """
+        household income:
+        livelihood and basic income if applicable
+        """
+        basic_income = 0
+        if self.model.basic_income_program:
+            basic_income = POVERTY_LINE
+
+        return self.base_income * (1 - self.livelihood_damage) + basic_income
     
     @property 
     def status(self):

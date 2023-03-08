@@ -39,6 +39,8 @@ class IGAD(mesa.Model):
         false_negative_rate=None,
         trust=None,
         government_help=None,
+        basic_income_program=None,
+        awareness_program=None,
         start_year=None,
         duration=None,
         **kwargs
@@ -50,6 +52,7 @@ class IGAD(mesa.Model):
         :param false_negative_rate: False negative rate for the model
         :param trust:   Trust value for the model
         :param government_help:  Whether the government fixes household damages or not
+        :param basic_income_program:    Whether the government provides a basic income or not
         :param start_year:  Start year of the model
         :param duration:    Duration of the flood event
         :param **kwargs:   Additional keyword arguments
@@ -62,6 +65,9 @@ class IGAD(mesa.Model):
         self.space = mg.GeoSpace(crs='epsg:4326', warn_crs_conversion=False)
         self.steps = 0
         self.counts = None
+
+        self.basic_income_program = basic_income_program
+        self.awareness_program = awareness_program
 
         # extract villages from kwargs
         active_villages = [
@@ -131,13 +137,13 @@ class IGAD(mesa.Model):
                 "n_evacuated": lambda this: len([a for a in this.agents if a.status == STATUS_EVACUATED]),
                 "n_trapped": lambda this: len([a for a in this.agents if a.status == STATUS_TRAPPED]),
                 
-                "mean_house_damage": lambda this: np.mean([a.house_damage for a in this.agents]),
-                "mean_livelihood_damage": lambda this: np.mean([a.livelihood_damage for a in this.agents]),
-                "mean_trust": lambda this: np.mean([a.trust for a in this.agents]),
-                "mean_perception": lambda this: np.mean([a.perception for a in this.agents]),
-                "mean_income": lambda this: np.mean([a.income for a in this.agents]),
-                "mean_awareness": lambda this: np.mean([a.awareness for a in this.agents]),
-                "mean_fear": lambda this: np.mean([a.fear for a in this.agents]),
+                "mean_house_damage": lambda this: np.mean([a.house_damage for a in this.agents]) * 100,
+                "mean_livelihood_damage": lambda this: np.mean([a.livelihood_damage for a in this.agents]) * 100,
+                "mean_trust": lambda this: np.mean([a.trust for a in this.agents]) * 100,
+                "mean_perception": lambda this: np.mean([a.perception for a in this.agents]) * 100,
+                "mean_income": lambda this: np.mean([a.income for a in this.agents]) * 100,
+                "mean_awareness": lambda this: np.mean([a.awareness for a in this.agents]) * 100,
+                "mean_fear": lambda this: np.mean([a.fear for a in this.agents]) * 100,
                 "displaced_lte_2": lambda this: sum([1 <= a.displacement_time <= 2  for a in this.agents]),
                 "displaced_lte_5": lambda this: sum([2 < a.displacement_time <= 5 for a in this.agents]),
                 "displaced_gt_5": lambda this: sum([ a.displacement_time > 5 for a in this.agents]),
