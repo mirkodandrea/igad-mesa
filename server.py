@@ -1,5 +1,6 @@
 import mesa_geo as mg
 import numpy as np
+from typing import Tuple
 
 import mesa
 from agents import (STATUS_DISPLACED, STATUS_EVACUATED, STATUS_NORMAL,
@@ -9,7 +10,30 @@ from model import IGAD, VILLAGES
 
 from stacked_bar_chart import StackedBarChartModule
 from grid_layout import GridLayoutModule
+from spaces import IGADCell
 
+
+def portrayal(element: IGADCell|HouseholdAgent) -> dict|Tuple[float, float, float, float]:
+    if isinstance(element, HouseholdAgent):
+        return households_draw(element)
+    elif isinstance(element, IGADCell):
+        return cell_portrayal(element)
+    else:
+        raise ValueError("Unknown element type")
+
+def cell_portrayal(cell: IGADCell) -> Tuple[float, float, float, float]:
+    if cell.water_level == 0:
+        return (0, 0, 0, 0)
+    else:
+        # return a blue color gradient based on the normalized water level
+        # from the lowest water level colored as RGBA: (74, 141, 255, 1)
+        # to the highest water level colored as RGBA: (0, 0, 255, 1)
+        return (
+            (1 - cell.water_level/1000) * 74,
+            (1 - cell.water_level/1000) * 141,
+            255,
+            cell.water_level / 1000,
+        )
 
 def households_draw(agent):
     """
@@ -88,7 +112,7 @@ model_params = dict(
 )
 
 map_element = mg.visualization.MapModule(
-    households_draw,
+    portrayal,
     map_width=350,
     map_height=900,
 )

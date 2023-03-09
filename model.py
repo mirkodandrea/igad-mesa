@@ -66,7 +66,10 @@ class IGAD(mesa.Model):
         np.random.seed(0)
 
         self.schedule = mesa.time.BaseScheduler(self)
-        self.space = mg.GeoSpace(crs='epsg:4326', warn_crs_conversion=False)
+        from spaces import IGADSpace
+        self.space = IGADSpace(crs='epsg:4326', warn_crs_conversion=False)
+
+        self.space.init_water_level('IGAD/Maps/SD_30mHazardMap_0001.tif')
         self.steps = 0
         self.counts = None
 
@@ -251,7 +254,7 @@ class IGAD(mesa.Model):
         """
         if not self.do_early_warning:
             return
-            
+
         emit = False
         if self.__has_floods():    
             emit = not self.random.random() <= self.false_negative_rate 
@@ -272,6 +275,11 @@ class IGAD(mesa.Model):
         """ 
         Apply flood to all agents
         """
+
+        event_filenames = [event['filename'] for event in events]
+        self.space.update_water_level(event_filenames)
+
+
         for household in self.agents:
             flood_value = 0
             for event in events:
@@ -305,6 +313,8 @@ class IGAD(mesa.Model):
         if self.__has_floods():
             events = self.events[self.steps]
             self.do_flood(events)
+        else:
+            self.space.reset_water_level()
 
         self.fix_damages()
 

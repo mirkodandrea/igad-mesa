@@ -9,7 +9,8 @@ def get_events(initial_year, stride=None):
 
     for year, group in df_floods.groupby('Year'):
         for idx, row in group.iterrows():
-            with rio.open(f'IGAD/Maps/SD_30mHazardMap_{row.EventID:0>4d}.tif') as f:
+            filename = f'IGAD/Maps/SD_30mHazardMap_{row.EventID:0>4d}.tif'
+            with rio.open(filename) as f:
                 flood_data = f.read(1)
 
             relative_year = year - initial_year
@@ -21,7 +22,8 @@ def get_events(initial_year, stride=None):
                     data=flood_data,
                     year=row.Year,
                     interarrival_time=row.InterarrivalTime,
-                    rio_object=f
+                    rio_object=f,
+                    filename=filename
                 ))
     return events
 
