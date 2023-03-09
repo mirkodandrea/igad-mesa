@@ -8,6 +8,7 @@ import pandas as pd
 from shapely.geometry import Point
 
 import mesa
+from spaces import IGADSpace
 from agents import (STATUS_DISPLACED, STATUS_EVACUATED, STATUS_NORMAL,
                     STATUS_TRAPPED, HouseholdAgent)
 from utils import get_events, load_population_data, MAPS_BASENAME
@@ -67,21 +68,35 @@ class IGAD(mesa.Model):
         # Set random seed to reset random sequence
         np.random.seed(0)
 
-        self.schedule = mesa.time.BaseScheduler(self)
-        from spaces import IGADSpace
+        STAGE_LIST = [
+            'init_step', 
+            'return_decision',
+            'receive_early_warning', 
+            'check_neighbours_for_evacuation',
+            'check_for_flood',
+            'displacement_decision',
+            'update_displacement_decision',
+            'update_sentiments',
+            'fix_damage',
+            'fix_neighbours_damage',
+        ]
+
+        self.schedule = mesa.time.StagedActivation(self, stage_list=STAGE_LIST)
+        
         self.space = IGADSpace(crs='epsg:4326', warn_crs_conversion=False)
 
         self.space.init_water_level(f'{MAPS_BASENAME}_0001_cut.tif')
         self.steps = 0
         self.counts = None
+        self.emitted_early_warning = False
 
         # active government programs
         self.do_early_warning = do_early_warning
         self.house_repair_program = house_repair_program
         self.basic_income_program = basic_income_program
         self.awareness_program = awareness_program
-        self.house_improvement_program = house_improvement_program
-
+        self.house_improvement_program = house_improvement_program  
+        
         # extract villages from kwargs
         active_villages = [
             village 
@@ -242,12 +257,6 @@ class IGAD(mesa.Model):
         return self.steps in self.events
     
 
-    def init_step(self):
-        """ execute init step for all agents
-        """
-        for household in self.agents:
-            household.init_step()
-
     def maybe_emit_early_warning(self):
         """ 
         fuzzy emit early warning
@@ -255,6 +264,7 @@ class IGAD(mesa.Model):
         If there is no flood event in time t, emit early warning with probability false_alarm_rate        
         """
         if not self.do_early_warning:
+            self.emitted_early_warning = False
             return
 
         emit = False
@@ -267,61 +277,30 @@ class IGAD(mesa.Model):
             return 
 
         print('Early warning at time step', self.steps)
-        for agent in self.agents:
-            agent.receive_early_warning()
-                
-        for agent in self.agents:                
-            agent.check_neighbours_for_evacuation()
+        self.emitted_early_warning = emit            
+
             
-    def do_flood(self, events):
+    def update_flood(self):
         """ 
         Apply flood to all agents
         """
+        if self.__has_floods():
+            events = self.events[self.steps]
+            event_filenames = [event['filename'] for event in events]
+            self.space.update_water_level(event_filenames)        
+        else:
+            self.space.reset_water_level()
 
-        event_filenames = [event['filename'] for event in events]
-        self.space.update_water_level(event_filenames)
-
-
-        for household in self.agents:
-            flood_value = 0
-            for event in events:
-                r = event['rio_object']
-                flood_data = event['data']
-                row, col = r.index(*household.geometry.xy)
-                flood_value = np.nanmax(
-                    flood_data[row, col]+
-                    [flood_value]
-                )
-            household.receive_flood(flood_value)
-
-    def fix_damages(self):
-        """
-        Fix damages for all agents
-        """        
-
-        for agent in self.agents:
-            agent.fix_damage(self.house_repair_program)
-
-        for agent in self.agents:
-            agent.fix_neighbours_damage()
 
     def step(self):
         """Run one step of the model."""
         self.steps += 1      
 
-        self.init_step()
         self.maybe_emit_early_warning()
+        self.update_flood()
 
-        if self.__has_floods():
-            events = self.events[self.steps]
-            self.do_flood(events)
-        else:
-            self.space.reset_water_level()
-
-        self.fix_damages()
-
-        # execute remaining steps for all agents
         self.schedule.step()
+        
         self.datacollector.collect(self)
         
         if EXPORT_TO_CSV:            

@@ -4,7 +4,7 @@ import mesa
 import numpy as np
 import mesa_geo as mg
 import rasterio as rio
-
+from typing import List
 
 
 class IGADCell(mg.Cell):
@@ -23,11 +23,23 @@ class IGADCell(mg.Cell):
 
 
 class IGADSpace(mg.GeoSpace):
+    """
+    Space for the IGAD model
+    """
+    
     def __init__(self, crs, **kwargs):
         super().__init__(crs=crs, **kwargs)
+    
+    def get_water_level(self, agent: mg.GeoAgent):
+        """check space for flood"""
+        x, y = agent.geometry.xy
+        i, j = (x[0],y[0]) * ~self.raster_layer.transform
+        pos = round(i), round(j)
+        cell = self.model.space.raster_layer[pos]
 
+        return cell.water_level
 
-    def init_water_level(self, event_file):
+    def init_water_level(self, event_file: str):
         """
         Initialize the water level of the space using the first event as reference
         waterl_level is set to 0 for all cells
@@ -51,7 +63,7 @@ class IGADSpace(mg.GeoSpace):
             attr_name="water_level",
         )
 
-    def update_water_level(self, event_files):
+    def update_water_level(self, event_files: List[str]):
         """
         Update the water level of the space using the maximum water level for all events
         """

@@ -69,8 +69,6 @@ class HouseholdAgent(mg.GeoAgent):
         self.last_house_damage = 0
         self.last_livelihood_damage = 0
 
-        self.return_decision()
-
     
     def return_decision(self):
         """
@@ -156,6 +154,9 @@ class HouseholdAgent(mg.GeoAgent):
         - if household has not perception of risk, prepare
         - if household has perception of risk, evacuate and prepare
         """
+        if not self.model.emitted_early_warning:
+            return 
+
         if not self.flood_prone:
             # not flood prone, don't receive early warning
             return
@@ -222,8 +223,9 @@ class HouseholdAgent(mg.GeoAgent):
             self.prepared = True
 
 
+
             
-    def receive_flood(self, flood_value):
+    def check_for_flood(self):
         """receive flood for current household
         increment damage if household is flooded
         - damage is in percentage
@@ -233,6 +235,7 @@ class HouseholdAgent(mg.GeoAgent):
         - damage is increased if household is made of mud bricks or wood by 50%
         - damage is increased if household is an informal settlement by 100%
         """
+        flood_value = self.model.space.get_water_level(agent)
 
         if flood_value < FLOOD_DAMAGE_THRESHOLD:
             """ nothing happened to this household """
@@ -265,9 +268,9 @@ class HouseholdAgent(mg.GeoAgent):
         self.displacement_decision()
            
 
-    def step(self):
-        self.update_displacement_decision()
-        self.update_sentiments()
+    # def step(self):
+    #     self.update_displacement_decision()
+    #     self.update_sentiments()
 
 
     def update_sentiments(self):
@@ -336,18 +339,18 @@ class HouseholdAgent(mg.GeoAgent):
                 self.trust = np.clip(self.trust - 0.1, 0, 1)
 
 
-    def fix_damage(self, government_help):
+    def fix_damage(self):
         """
         fix damage for current household
         """
         self.livelihood_damage = np.clip(self.livelihood_damage - 0.3, 0, 1)
 
-        if government_help <= 0:
+        if self.model.house_repair_program <= 0:
             return
 
         # if government help is available, try to use it to fix damage if damage is above MEDIUM_DAMAGE_THRESHOLD
         if self.house_damage > MEDIUM_DAMAGE_THRESHOLD:
-            if random() < government_help:
+            if random() < self.model.house_repair_program:
                 # government help is used to fix damage 100%
                 self.house_damage = 0
 
