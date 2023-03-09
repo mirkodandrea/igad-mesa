@@ -26,7 +26,7 @@ class IGADSpace(mg.GeoSpace):
     """
     Space for the IGAD model
     """
-    
+
     def __init__(self, crs, **kwargs):
         super().__init__(crs=crs, **kwargs)
     
@@ -35,7 +35,7 @@ class IGADSpace(mg.GeoSpace):
         x, y = agent.geometry.xy
         i, j = (x[0],y[0]) * ~self.raster_layer.transform
         pos = round(i), round(j)
-        cell = self.model.space.raster_layer[pos]
+        cell = self.raster_layer[pos]
 
         return cell.water_level
 

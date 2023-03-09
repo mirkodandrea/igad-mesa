@@ -235,7 +235,7 @@ class HouseholdAgent(mg.GeoAgent):
         - damage is increased if household is made of mud bricks or wood by 50%
         - damage is increased if household is an informal settlement by 100%
         """
-        flood_value = self.model.space.get_water_level(agent)
+        flood_value = self.model.space.get_water_level(self)
 
         if flood_value < FLOOD_DAMAGE_THRESHOLD:
             """ nothing happened to this household """
