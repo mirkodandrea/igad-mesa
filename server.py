@@ -47,26 +47,30 @@ def households_draw(agent):
 
     if agent.status == STATUS_NORMAL:
         portrayal["fillColor"] = "Green"
+        portrayal["color"] = "Green"
     elif agent.status == STATUS_DISPLACED:
         portrayal["fillColor"] = "Black"
+        portrayal["color"] = "Black"
     elif agent.status == STATUS_EVACUATED:
         portrayal["fillColor"] = "Red"
+        portrayal["color"] = "Red"
     elif agent.status == STATUS_TRAPPED:
         portrayal["fillColor"] = "Yellow"
+        portrayal["color"] = "Yellow"
 
-    if agent.received_flood:
-        portrayal["color"] = "Blue"
-    else:
-        portrayal["color"] = "Gray"
+    # if agent.received_flood:
+    #     portrayal["color"] = "Blue"
+    # else:
+    #     portrayal["color"] = "Gray"
 
     agent_radius = 8.0
     if agent.income < POVERTY_LINE:
         agent_radius = 5.0
 
-    if agent.prepared:
-        portrayal['weight'] = 3.0
-    else:
-        portrayal['weight'] = 1.0
+    # if agent.prepared:
+    #     portrayal['weight'] = 3.0
+    # else:
+    #     portrayal['weight'] = 1.0
 
     portrayal["radius"] = agent_radius
     half_circle_length = agent_radius * np.pi

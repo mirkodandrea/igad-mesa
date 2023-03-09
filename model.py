@@ -71,24 +71,26 @@ class IGAD(mesa.Model):
         STAGE_LIST = [
             'init_step', 
             'return_decision',
-            'receive_early_warning', 
+            'check_for_early_warning', 
             'check_neighbours_for_evacuation',
-            'check_for_flood',
+            'react_to_flood',
             'displacement_decision',
-            'update_displacement_decision',
+            'check_neighbours_for_displacement',
             'update_sentiments',
             'fix_damage',
             'fix_neighbours_damage',
         ]
 
-        self.schedule = mesa.time.StagedActivation(self, stage_list=STAGE_LIST)
+        self.schedule = mesa.time.StagedActivation(self, 
+            stage_list=STAGE_LIST, 
+            shuffle_between_stages=True
+        )
         
-        self.space = IGADSpace(crs='epsg:4326', warn_crs_conversion=False)
-
-        self.space.init_water_level(f'{MAPS_BASENAME}_0001_cut.tif')
+        self.space = IGADSpace(crs='epsg:4326', warn_crs_conversion=False, reference=f'{MAPS_BASENAME}_0001_cut.tif')
+        
         self.steps = 0
-        self.counts = None
         self.emitted_early_warning = False
+        self.flood_event = False
 
         # active government programs
         self.do_early_warning = do_early_warning
@@ -137,8 +139,8 @@ class IGAD(mesa.Model):
                 Point(x, y), 
                 "H" + str(i)
             )
-            # Assign attributes
             
+            # Assign attributes            
             household.base_income = self.incomes[i]
             household.flood_prone = bool(self.flood_prones[i])
             household.awareness = self.awarenesses[i]
@@ -287,9 +289,11 @@ class IGAD(mesa.Model):
         if self.__has_floods():
             events = self.events[self.steps]
             event_filenames = [event['filename'] for event in events]
-            self.space.update_water_level(event_filenames)        
+            self.space.update_water_level(event_filenames)  
+            self.flood_event = True
         else:
             self.space.reset_water_level()
+            self.flood_event = False
 
 
     def step(self):
