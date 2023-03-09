@@ -3,7 +3,7 @@ import json
 
 class StackedBarChartModule(VisualizationElement):
     package_includes = [CHART_JS_FILE]
-    local_includes = ["StackedBarChartModule.js"]
+    local_includes = ["visualizers/StackedBarChartModule.js"]
 
     def __init__(
         self,

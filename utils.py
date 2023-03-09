@@ -1,5 +1,6 @@
 import pandas as pd
 import rasterio as rio
+MAPS_BASENAME = 'IGAD/Maps/SD_30mHazardMap'
 
 def get_events(initial_year, stride=None):
     events = {}
@@ -9,7 +10,7 @@ def get_events(initial_year, stride=None):
 
     for year, group in df_floods.groupby('Year'):
         for idx, row in group.iterrows():
-            filename = f'IGAD/Maps/SD_30mHazardMap_{row.EventID:0>4d}.tif'
+            filename = f'{MAPS_BASENAME}_{row.EventID:0>4d}_cut.tif'
             with rio.open(filename) as f:
                 flood_data = f.read(1)
 

@@ -3,7 +3,7 @@ import json
 
 class GridLayoutModule(VisualizationElement):
     package_includes = [CHART_JS_FILE]
-    local_includes = ["GridLayoutModule.js"]
+    local_includes = ["visualizers/GridLayoutModule.js"]
 
     def __init__(
         self,

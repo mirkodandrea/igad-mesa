@@ -10,7 +10,9 @@ from shapely.geometry import Point
 import mesa
 from agents import (STATUS_DISPLACED, STATUS_EVACUATED, STATUS_NORMAL,
                     STATUS_TRAPPED, HouseholdAgent)
-from utils import get_events, load_population_data
+from utils import get_events, load_population_data, MAPS_BASENAME
+
+
 
 EXPORT_TO_CSV = True
 RAND_POSITION = False
@@ -69,7 +71,7 @@ class IGAD(mesa.Model):
         from spaces import IGADSpace
         self.space = IGADSpace(crs='epsg:4326', warn_crs_conversion=False)
 
-        self.space.init_water_level('IGAD/Maps/SD_30mHazardMap_0001.tif')
+        self.space.init_water_level(f'{MAPS_BASENAME}_0001_cut.tif')
         self.steps = 0
         self.counts = None
 
