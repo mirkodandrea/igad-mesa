@@ -93,8 +93,10 @@ def households_draw(agent):
 
 
 model_params = dict(
-    _model_params=mesa.visualization.StaticText("Model Parameters"),
+    save_to_csv=mesa.visualization.Checkbox("Save to CSV", True),
     
+    _separator_1=mesa.visualization.StaticText("_______________________________"),
+    _model_params=mesa.visualization.StaticText("Model Parameters"),    
     do_early_warning=mesa.visualization.Checkbox("Early Warning", True),
     false_alarm_rate=mesa.visualization.Slider("False Alarm Rate", 0.3, 0, 1, 0.1),
     false_negative_rate=mesa.visualization.Slider("False Negative Rate", 0.1, 0, 1, 0.1),
@@ -105,7 +107,7 @@ model_params = dict(
     basic_income_program=mesa.visualization.Checkbox("Basic Income Program", False),
     awareness_program=mesa.visualization.Checkbox("Awareness Program", False),
     
-    _separator=mesa.visualization.StaticText("_______________________________"),
+    _separator_2=mesa.visualization.StaticText("_______________________________"),
     _events_params=mesa.visualization.StaticText("Events Parameters"),
     scenario=mesa.visualization.Choice("Scenario", SCENARIOS[0], SCENARIOS),
     _active_villages=mesa.visualization.StaticText("Active Villages"),

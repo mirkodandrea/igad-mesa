@@ -1,5 +1,5 @@
 from typing import List
-
+from datetime import datetime
 import geopandas as gpd
 import mesa_geo as mg
 import numpy as np
@@ -14,8 +14,6 @@ from agents import (STATUS_DISPLACED, STATUS_EVACUATED, STATUS_NORMAL,
 from utils import get_events, load_population_data, MAPS_BASENAME, DF_SCENARIOS, DF_EVENTS, MAX_YEARS
 
 
-
-EXPORT_TO_CSV = True
 RAND_POSITION = False
 
 VILLAGES = [
@@ -51,6 +49,7 @@ class IGAD(mesa.Model):
     """Model class for the IGAD model."""
     def __init__(
         self, 
+        save_to_csv=None,
         false_alarm_rate=None,
         false_negative_rate=None,
         trust=None,
@@ -75,6 +74,9 @@ class IGAD(mesa.Model):
         :param scenario:    Scenario to run
         :param **kwargs:   Additional keyword arguments
         """
+        super().__init__()
+
+        self.save_to_csv = save_to_csv
 
         # Set random seed to reset random sequence
         np.random.seed(0)
@@ -283,19 +285,18 @@ class IGAD(mesa.Model):
 
     def step(self):
         """Run one step of the model."""
-        self.steps += 1      
-
+        self.steps += 1
         self.maybe_emit_early_warning()
         self.update_flood()
-
         self.schedule.step()
-        
         self.datacollector.collect(self)
         
-        if EXPORT_TO_CSV:            
-            df = self.datacollector.get_agent_vars_dataframe()
-            df.to_csv('output/data.csv')
-
         if self.steps >= MAX_YEARS:
             self.running = False
+            if self.save_to_csv:
+                # current date
+                now = datetime.now().strftime("%Y%m%d_%H%M%S")
+                df = self.datacollector.get_agent_vars_dataframe()
+                df.to_csv(f'output/data_{now}.csv')
+
 

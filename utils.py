@@ -120,3 +120,4 @@ def load_population_data() -> pd.DataFrame:
     return df
 
 DF_SCENARIOS = generate_scenarios()
+print(DF_SCENARIOS)
