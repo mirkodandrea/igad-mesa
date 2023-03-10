@@ -28,6 +28,7 @@ class IGADSpace(mg.GeoSpace):
     """
 
     def __init__(self, crs, reference, **kwargs):
+        self._agents_positions = {}
         super().__init__(crs=crs, **kwargs)
         self.__init_water_level(reference)
 
@@ -48,9 +49,14 @@ class IGADSpace(mg.GeoSpace):
 
     def get_water_level(self, agent: mg.GeoAgent):
         """check space for flood"""
-        x, y = agent.geometry.xy
-        i, j = (x[0],y[0]) * ~self.raster_layer.transform
-        pos = round(i), round(j)
+        if agent in self._agents_positions:
+            pos = self._agents_positions[agent]
+        else:
+            x, y = agent.geometry.xy
+            i, j = (x[0],y[0]) * ~self.raster_layer.transform
+            pos = round(i), round(j)
+            self._agents_positions[agent] = pos
+        
         cell = self.raster_layer[pos]
 
         return cell.water_level

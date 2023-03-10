@@ -7,7 +7,7 @@ MAPS_BASENAME = 'IGAD/Maps/SD_30mHazardMap'
 
 DF_EVENTS = pd.read_csv('IGAD/SD_EventCalendar.csv').query('ReturnPeriod < 273')
 SCENARIOS = ['Low Hazard', 'Medium Hazard', 'High Hazard', 'Very High Hazard', 'Extreme Hazard']
-MAX_YEARS = 50
+MAX_YEARS = 30
 
 def generate_scenarios():
     """
