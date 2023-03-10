@@ -11,8 +11,15 @@ STATUS_EVACUATED = 'evacuated'
 STATUS_DISPLACED = 'displaced'
 STATUS_TRAPPED = 'trapped'
 
+MATERIAL_STONE_BRICKS = 'Stone bricks'
+MATERIAL_CONCRETE = 'Concrete'
+MATERIAL_WOOD = 'Wood'
+MATERIAL_MUD_BRICKS = 'Mud bricks'
+MATERIAL_INFORMAL_SETTLEMENTS = 'Informal settlement'
+
 LOW_DAMAGE_THRESHOLD = 0.25
-MEDIUM_DAMAGE_THRESHOLD = 0.7
+MEDIUM_DAMAGE_THRESHOLD = 0.70
+BASE_RICOVERY = 0.30
 
 class HouseholdAgent(mg.GeoAgent):
     """Household Agent."""
@@ -105,6 +112,7 @@ class HouseholdAgent(mg.GeoAgent):
             'id': self.unique_id,
             'damage': f"h: {int(100 * self.house_damage)}% - l: {int(100 * self.livelihood_damage)}%",
             'status': self.status, 
+            'flood_prone': self.flood_prone,
             'income': f"{self.income:.2f}", 
             'awareness': f"{int(100 * self.awareness)}%", 
             'fear': f"{int(100 * self.fear)}%", 
@@ -310,12 +318,13 @@ class HouseholdAgent(mg.GeoAgent):
         if self.prepared:
             new_damage = new_damage * 0.5
 
-        if self.house_materials in ['Concrete', 'Stone bricks']:
-            new_damage *= 1.0 
-        elif self.house_materials in ['Mud bricks','Wood']:
+        if self.house_materials in [MATERIAL_CONCRETE, MATERIAL_STONE_BRICKS]:
+            pass
+        elif self.house_materials in [MATERIAL_MUD_BRICKS, MATERIAL_WOOD]:
             new_damage *= 1.5
-        elif self.house_materials == 'Informal settlement ':
-            new_damage *= 2.0
+        elif self.house_materials == MATERIAL_INFORMAL_SETTLEMENTS:
+            new_damage *= 2.0            
+
 
         self.last_house_damage = new_damage
         self.house_damage = np.clip(self.house_damage + new_damage, 0, 1)
@@ -349,14 +358,14 @@ class HouseholdAgent(mg.GeoAgent):
 
         MIN_AWARENESS = 0.5 if self.model.awareness_program else 0.3
         if not anyone_flooded:
-            # awareness is reduced by 20% if no one is flooded
+            # awareness is reduced by 10% if no one is flooded
             self.awareness = np.clip(self.awareness - 0.1, MIN_AWARENESS, 1)
 
             # fear is reduced by 10% if no one is flooded
             self.fear = np.clip(self.fear - 0.1, 0.3, 1)
 
             if self.alerted:
-                # trust is reduced by 50% if no one is flooded but household is alerted
+                # trust is reduced by 10% absolute value
                 self.trust = np.clip(self.trust - 0.1, 0, 1)
 
 
@@ -407,7 +416,7 @@ class HouseholdAgent(mg.GeoAgent):
 
                     if self.model.house_improvement_program:
                         # if house improvement program is active, house materials are improved
-                        self.house_materials = 'Concrete'
+                        self.house_materials = MATERIAL_CONCRETE
 
                     return
         
@@ -417,16 +426,16 @@ class HouseholdAgent(mg.GeoAgent):
             # and if household has income above poverty line
             return
 
-        recovery = 0.3
-        # every unit of income above poverty line increases recovery by 10%
-        recovery = recovery * (1 + (self.income - POVERTY_LINE) / 10)
+        
+        # every unit of income above poverty line increases recovery by +10%
+        recovery = BASE_RICOVERY + (self.income - POVERTY_LINE) / 10
 
-        if self.house_materials in ['Concrete', 'Stone bricks']:
-            recovery *= 1.0 
-        elif self.house_materials in ['Mud bricks','Wood']:
+        if self.house_materials in [MATERIAL_CONCRETE, MATERIAL_STONE_BRICKS]:
+            pass
+        elif self.house_materials in [MATERIAL_MUD_BRICKS, MATERIAL_WOOD]:
             recovery *= 1.5
-        elif self.house_materials == 'Informal settlement ':
-            recovery *= 2.0            
+        elif self.house_materials == MATERIAL_INFORMAL_SETTLEMENTS:
+            recovery *= 2.0
 
         self.house_damage = np.clip(self.house_damage - recovery, 0, 1)
 

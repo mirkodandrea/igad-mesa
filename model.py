@@ -11,7 +11,7 @@ import mesa
 from spaces import IGADSpace
 from agents import (STATUS_DISPLACED, STATUS_EVACUATED, STATUS_NORMAL,
                     STATUS_TRAPPED, HouseholdAgent)
-from utils import get_events, load_population_data, MAPS_BASENAME
+from utils import get_events, load_population_data, MAPS_BASENAME, DF_SCENARIOS, DF_EVENTS, MAX_YEARS
 
 
 
@@ -28,11 +28,24 @@ VILLAGES = [
     'Wad Ramli'
 ]
 
+STAGE_LIST = [
+    'init_step', 
+    'return_decision',
+    'check_for_early_warning', 
+    'check_neighbours_for_evacuation',
+    'react_to_flood',
+    'displacement_decision',
+    'check_neighbours_for_displacement',
+    'update_sentiments',
+    'fix_damage',
+    'fix_neighbours_damage',
+]
+        
+
 ALL_SETTLEMENTS = gpd.read_file('IGAD/settlements_grid_wdst_sampled.gpkg').to_crs(epsg=4326)
 BOUNDING_BOXES = gpd.read_file('IGAD/BoundingBox20022023/BoundingBox_20022023.shp').to_crs(epsg=4326)
 # select only the bounding box of the village
 ALL_POPULATION_DATA = load_population_data()
-
 
 class IGAD(mesa.Model):
     """Model class for the IGAD model."""
@@ -46,8 +59,7 @@ class IGAD(mesa.Model):
         house_improvement_program=None,
         basic_income_program=None,
         awareness_program=None,
-        start_year=None,
-        duration=None,
+        scenario=None,
         **kwargs
     ):
         """
@@ -60,27 +72,14 @@ class IGAD(mesa.Model):
         :param house_improvement_program: whether the government provides house improvement (e.g. change materials)
         :param basic_income_program: Whether the government provides a basic income or not
         :param awareness_program: Whether the government provides awareness programs or not
-        :param start_year:  Start year of the model
-        :param duration:    Duration of the flood event
+        :param scenario:    Scenario to run
         :param **kwargs:   Additional keyword arguments
         """
 
         # Set random seed to reset random sequence
         np.random.seed(0)
 
-        STAGE_LIST = [
-            'init_step', 
-            'return_decision',
-            'check_for_early_warning', 
-            'check_neighbours_for_evacuation',
-            'react_to_flood',
-            'displacement_decision',
-            'check_neighbours_for_displacement',
-            'update_sentiments',
-            'fix_damage',
-            'fix_neighbours_damage',
-        ]
-
+        self.scenario = scenario
         self.schedule = mesa.time.StagedActivation(self, 
             stage_list=STAGE_LIST, 
             shuffle_between_stages=True
@@ -107,13 +106,12 @@ class IGAD(mesa.Model):
             f'village_{n}' in kwargs and
             kwargs[f'village_{n}'] == True
         ]
-        self.load_data(start_year=start_year, duration=duration, villages=active_villages)
+        self.load_data(villages=active_villages)
 
         # IGAD MODEL PARAMETERS
         self.false_alarm_rate = false_alarm_rate
         self.false_negative_rate = false_negative_rate
         
-        self.duration = duration
         
         self.running = True
         self.create_datacollector()
@@ -194,11 +192,12 @@ class IGAD(mesa.Model):
             },
         )
 
-    def load_data(self, start_year: int, duration: int, villages: List[str]):
+    def load_data(self, villages: List[str]):
         """
         Load data from population, settlements and flood events.
         """
-        self.events = get_events(initial_year=start_year, stride=duration)
+        start_year, end_year = DF_SCENARIOS.loc[self.scenario, ['start_year', 'end_year']]
+        self.events = get_events(start_year=start_year, end_year=end_year)
 
         self.incomes = []
         self.flood_prones = []
@@ -210,46 +209,32 @@ class IGAD(mesa.Model):
         self.positions = []
 
         for village in villages:
-            bounding_box = BOUNDING_BOXES.query('village == @village').geometry
-            settlements = ALL_SETTLEMENTS[ALL_SETTLEMENTS.geometry.within(bounding_box.unary_union)]
-            # resample settlements to 1/10 of the original
-            
-            n_households = len(settlements)
+            print('Loading data for village', village)
 
-            village_lons = settlements.geometry.centroid.x
-            village_lats = settlements.geometry.centroid.y
+            bounding_boxes = BOUNDING_BOXES.query('village == @village')            
+            for id, bounding_box in bounding_boxes.iterrows():
+                flood_prone = bounding_box.floodprone == 1
+                settlements = ALL_SETTLEMENTS[ALL_SETTLEMENTS.geometry.within(bounding_box.geometry)]
 
-            # village_flood_prones = (village_lons - village_lons.min()) / (village_lons.max() - village_lons.min()) < 0.3
-            # village_flood_prones = village_flood_prones.values
-            village_flood_prones = [True] * n_households
-            village_positions = list(zip(village_lons, village_lats))
+                n_households = len(settlements)
 
-            population_data = ALL_POPULATION_DATA\
-                    .query('village == @village')\
-                    .sample(n_households, replace=True)
-                
-            village_incomes = population_data['income'].apply(lambda x: (x + random())**1.3).values
-            village_house_materials = population_data['walls_materials'].values
-            village_fears = population_data['fear_of_flood'].values / 3
+                village_lons = settlements.geometry.centroid.x
+                village_lats = settlements.geometry.centroid.y
 
-            village_household_size = population_data['household_size'].values
-            
-            village_obstacles_to_movement = \
-                (population_data[['vulnerabilities', 'properties']].sum(axis=1) > 4).values | \
-                population_data['household_size'].values > 5
-            
-            village_awarenesses = 0.75 + random(n_households) * 0.25
-            
+                village_flood_prones = [flood_prone] * n_households
+                village_positions = list(zip(village_lons, village_lats))
+                village_data = ALL_POPULATION_DATA\
+                        .query('village == @village')\
+                        .sample(n_households, replace=True)
 
-            self.positions += village_positions
-            #trusts += village_trusts.tolist()
-            self.incomes += village_incomes.tolist()
-            self.flood_prones += village_flood_prones #.tolist()
-            self.awarenesses += village_awarenesses.tolist()
-            self.house_materials += village_house_materials.tolist()
-            self.households_size += village_household_size.tolist()
-            self.obstacles_to_movement += village_obstacles_to_movement.tolist()
-            self.fears += village_fears.tolist()
+                self.positions += village_positions
+                self.incomes += village_data['income'].values.tolist()
+                self.flood_prones += village_flood_prones #.tolist()
+                self.awarenesses += village_data['awareness'].values.tolist()
+                self.house_materials += village_data['walls_materials'].values.tolist()
+                self.households_size += village_data['household_size'].values.tolist()
+                self.obstacles_to_movement += village_data['obstacles_to_movement'].values.tolist()
+                self.fears += village_data['fear_of_flood'].tolist()
 
 
     def __has_floods(self):
@@ -311,6 +296,6 @@ class IGAD(mesa.Model):
             df = self.datacollector.get_agent_vars_dataframe()
             df.to_csv('output/data.csv')
 
-        if self.steps >= self.duration:
+        if self.steps >= MAX_YEARS:
             self.running = False
 

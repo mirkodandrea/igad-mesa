@@ -12,6 +12,7 @@ from visualizers.stacked_bar_chart import StackedBarChartModule
 from visualizers.grid_layout import GridLayoutModule
 from visualizers.map_module import MapModulePatched
 from spaces import IGADCell
+from utils import SCENARIOS
 
 
 def portrayal(element: IGADCell|HouseholdAgent) -> dict|Tuple[float, float, float, float]:
@@ -47,17 +48,19 @@ def households_draw(agent):
 
     if agent.status == STATUS_NORMAL:
         portrayal["fillColor"] = "Green"
-        portrayal["color"] = "Green"
+        portrayal["fillOpacity"] = "0.5"
     elif agent.status == STATUS_DISPLACED:
         portrayal["fillColor"] = "Black"
-        portrayal["color"] = "Black"
+        portrayal["fillOpacity"] = "0.5"        
     elif agent.status == STATUS_EVACUATED:
         portrayal["fillColor"] = "Red"
-        portrayal["color"] = "Red"
+        portrayal["fillOpacity"] = "0.5"
     elif agent.status == STATUS_TRAPPED:
         portrayal["fillColor"] = "Yellow"
-        portrayal["color"] = "Yellow"
+        portrayal["fillOpacity"] = "0.5"
 
+    
+    portrayal["color"] = "Gray"
     # if agent.received_flood:
     #     portrayal["color"] = "Blue"
     # else:
@@ -89,11 +92,10 @@ def households_draw(agent):
 
 
 
-
 model_params = dict(
     _model_params=mesa.visualization.StaticText("Model Parameters"),
     
-    do_early_warning=mesa.visualization.Checkbox("Early Warning", False),
+    do_early_warning=mesa.visualization.Checkbox("Early Warning", True),
     false_alarm_rate=mesa.visualization.Slider("False Alarm Rate", 0.3, 0, 1, 0.1),
     false_negative_rate=mesa.visualization.Slider("False Negative Rate", 0.1, 0, 1, 0.1),
     trust=mesa.visualization.Slider("Initial authority Trust", 0.75, 0, 1, 0.05),
@@ -105,9 +107,7 @@ model_params = dict(
     
     _separator=mesa.visualization.StaticText("_______________________________"),
     _events_params=mesa.visualization.StaticText("Events Parameters"),
-    start_year=mesa.visualization.Slider("Start Year", 25, 0, 1000, 1),
-    duration=mesa.visualization.Slider("Simulation Duration", 30, 5, 100, 1),
-    
+    scenario=mesa.visualization.Choice("Scenario", SCENARIOS[0], SCENARIOS),
     _active_villages=mesa.visualization.StaticText("Active Villages"),
     ** {
         f'village_{n}': mesa.visualization.Checkbox(f"{village_name}", True) 
