@@ -87,7 +87,10 @@ class IGAD(mesa.Model):
             shuffle_between_stages=True
         )
         
-        self.space = IGADSpace(crs='epsg:4326', warn_crs_conversion=False, reference=f'{MAPS_BASENAME}_0001_cut.tif')
+        self.space = IGADSpace(crs='epsg:4326', 
+            warn_crs_conversion=False, 
+            reference=f'{MAPS_BASENAME}_0001_cut.tif'
+        )
         
         self.steps = 0
         self.emitted_early_warning = False
@@ -100,6 +103,14 @@ class IGAD(mesa.Model):
         self.awareness_program = awareness_program
         self.house_improvement_program = house_improvement_program  
         
+        # IGAD MODEL PARAMETERS
+        self.false_alarm_rate = false_alarm_rate
+        self.false_negative_rate = false_negative_rate
+        
+        self.running = False
+        self.create_datacollector()
+        
+
         # extract villages from kwargs
         active_villages = [
             village 
@@ -110,31 +121,19 @@ class IGAD(mesa.Model):
         ]
         self.load_data(villages=active_villages)
 
-        # IGAD MODEL PARAMETERS
-        self.false_alarm_rate = false_alarm_rate
-        self.false_negative_rate = false_negative_rate
         
-        
-        self.running = True
-        self.create_datacollector()
-        self.agents = []
-
-        # Generate PersonAgent population
+        self.agents = []      
+        # Generate HouseHold Agents
         ac_population = mg.AgentCreator(
             HouseholdAgent,
             model=self,
             crs=self.space.crs,
             agent_kwargs={},
-        )
-
-        # Create agents and assign them to the space, with slight randomization of the position
+        )       
         n_agents = len(self.positions)
 
         for i in range(n_agents):
             x, y = self.positions[i]
-            if RAND_POSITION:
-                x = x + np.random.normal(0, 0.001)
-                y = y + np.random.normal(0, 0.001)
             household = ac_population.create_agent(
                 Point(x, y), 
                 "H" + str(i)

@@ -334,7 +334,7 @@ class HouseholdAgent(mg.GeoAgent):
         self.last_livelihood_damage = new_damage
         self.livelihood_damage = np.clip(self.livelihood_damage + new_damage, 0, 1)
 
-        self.displacement_decision()
+       
            
 
     def update_sentiments(self):

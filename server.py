@@ -191,7 +191,6 @@ chart_stats = mesa.visualization.ChartModule([
     canvas_width=1200
 )
 
-
 chart_displacement = StackedBarChartModule([
     {
         "Color": "Red",
