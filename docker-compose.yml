@@ -1,0 +1,16 @@
+version: "3.9"
+
+services:
+  igad_mesa:
+    build:
+      context: .
+      args:
+        - APP_DIR=${APP_DIR:-/opt/igad-mesa}
+        - USERNAME=${PACKAGES_FILE:-mesa}
+        - USER_ID=${USER_ID:-1000}
+        - GROUP_ID=${GROUP_ID:-1000}
+        - PACKAGES_FILE=${PACKAGES_FILE:-requirements.txt}
+    volumes:
+      - ${MESA_DATA_DIR:-./IGAD}:${APP_DIR:-/opt/igad-mesa}/IGAD
+    ports:
+      - ${HOST_IP:-127.0.0.1}:8521:8521
