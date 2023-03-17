@@ -14,5 +14,6 @@ services:
     container_name: ${MESA_CONTR_NAME:-igad-mesa}
     volumes:
       - ${MESA_DATA_DIR:-./IGAD}:${APP_DIR:-/opt/igad-mesa}/IGAD
+      - ${MESA_OUTPUTS_DIR:-./output}:${APP_DIR:-/opt/igad-mesa}/output
     ports:
       - "${HOST_IP:-127.0.0.1}:${HOST_PORT:-8521}:8521"
