@@ -1,4 +1,4 @@
-FROM python:3.10
+FROM python:3.10-slim
 
 # Define pluggable args
 ARG APP_DIR=/opt/igad-mesa
