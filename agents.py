@@ -3,19 +3,12 @@ import numpy as np
 from numpy.random import random
 from shapely.geometry import Point
 
+from utils import get_damage
 from constants import (FLOOD_DAMAGE_MAX, FLOOD_DAMAGE_THRESHOLD, MAX_DISTANCE,
                        POVERTY_LINE)
+from constants import (STATUS_NORMAL, STATUS_EVACUATED, STATUS_DISPLACED, STATUS_TRAPPED)
+from constants import (MATERIAL_STONE_BRICKS, MATERIAL_CONCRETE, MATERIAL_WOOD, MATERIAL_MUD_BRICKS, MATERIAL_INFORMAL_SETTLEMENTS)
 
-STATUS_NORMAL = 'normal'
-STATUS_EVACUATED = 'evacuated'
-STATUS_DISPLACED = 'displaced'
-STATUS_TRAPPED = 'trapped'
-
-MATERIAL_STONE_BRICKS = 'Stone bricks'
-MATERIAL_CONCRETE = 'Concrete'
-MATERIAL_WOOD = 'Wood'
-MATERIAL_MUD_BRICKS = 'Mud bricks'
-MATERIAL_INFORMAL_SETTLEMENTS = 'Informal settlement'
 
 LOW_DAMAGE_THRESHOLD = 0.25
 MEDIUM_DAMAGE_THRESHOLD = 0.70
@@ -295,46 +288,25 @@ class HouseholdAgent(mg.GeoAgent):
         increment damage if household is flooded
         - damage is in percentage
         - damage occurs if flood value is > 100mm
-        - damage is proportional to flood value: 1m -> 100% damage
-        - damage is reduced by 50% if household is prepared
-        - damage is increased if household is made of mud bricks or wood by 50%
-        - damage is increased if household is an informal settlement by 100%
+        - damage is calculated using damage curve defined by house material
         """
         if not self.model.flood_event:
             return
-
+        
         flood_value = self.model.space.get_water_level(self)
 
-        if flood_value < FLOOD_DAMAGE_THRESHOLD:
-            """ nothing happened to this household """
-            self.received_flood = False
-            return
+        if flood_value > 0:
+            self.received_flood = True
 
-        self.received_flood = True
-        if self.prepared and flood_value < FLOOD_DAMAGE_THRESHOLD:
-            return
-        
-        new_damage = (flood_value / FLOOD_DAMAGE_MAX)
-        if self.prepared:
-            new_damage = new_damage * 0.5
-
-        if self.house_materials in [MATERIAL_CONCRETE, MATERIAL_STONE_BRICKS]:
-            pass
-        elif self.house_materials in [MATERIAL_MUD_BRICKS, MATERIAL_WOOD]:
-            new_damage *= 1.5
-        elif self.house_materials == MATERIAL_INFORMAL_SETTLEMENTS:
-            new_damage *= 2.0            
-
-
+        # house damage using curve        
+        new_damage = get_damage(flood_value, self.house_materials)
         self.last_house_damage = new_damage
-        self.house_damage = np.clip(self.house_damage + new_damage, 0, 1)
+        self.house_damage = max(self.house_damage, new_damage)
 
         # livelihood damage isn't affected by preparedness
         new_damage = flood_value / FLOOD_DAMAGE_MAX
         self.last_livelihood_damage = new_damage
         self.livelihood_damage = np.clip(self.livelihood_damage + new_damage, 0, 1)
-
-       
            
 
     def update_sentiments(self):

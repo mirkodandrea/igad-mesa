@@ -2,12 +2,21 @@ import pandas as pd
 import rasterio as rio
 import numpy as np
 
+from constants import (MATERIAL_STONE_BRICKS, MATERIAL_CONCRETE, MATERIAL_WOOD, MATERIAL_MUD_BRICKS, MATERIAL_INFORMAL_SETTLEMENTS)
 
 MAPS_BASENAME = 'IGAD/Maps/SD_30mHazardMap'
 
 DF_EVENTS = pd.read_csv('IGAD/SD_EventCalendar.csv').query('ReturnPeriod < 273')
 SCENARIOS = ['Low Hazard', 'Medium Hazard', 'High Hazard', 'Very High Hazard', 'Extreme Hazard']
 MAX_YEARS = 30
+# read curves from file, first columns is the index, second column is the value
+CURVES = {
+    'M': pd.read_csv('IGAD/curves/M1.csv', index_col=0, header=None, names=['damage', 'std']),
+    'C': pd.read_csv('IGAD/curves/C1.csv', index_col=0, header=None, names=['damage', 'std']),
+    'W': pd.read_csv('IGAD/curves/W1.csv', index_col=0, header=None, names=['damage', 'std']),
+    'T': pd.read_csv('IGAD/curves/T1.csv', index_col=0, header=None, names=['damage', 'std']),
+    'R': pd.read_csv('IGAD/curves/R1.csv', index_col=0, header=None, names=['damage', 'std'])
+}
 
 def generate_scenarios():
     """
@@ -118,6 +127,42 @@ def load_population_data() -> pd.DataFrame:
     ]]
     df.fillna(0, inplace=True)
     return df
+
+def get_damage(value, material):
+    """
+    Returns the damage value for a given flood value and material
+    @param value: flood value
+    @param material: material
+    """
+    if value <= 0:
+        return 0
+    
+    curve = None
+    if material == MATERIAL_STONE_BRICKS:
+        curve = CURVES['M']
+    elif material == MATERIAL_CONCRETE:
+        curve = CURVES['C']
+    elif material == MATERIAL_WOOD:
+        curve = CURVES['W']
+    elif material == MATERIAL_INFORMAL_SETTLEMENTS:
+        curve = CURVES['R']
+    elif material == MATERIAL_MUD_BRICKS:
+        curve = CURVES['T']
+
+    if value < curve.index[0]:
+       return 0
+
+    idx = np.searchsorted(curve.index, value, side='left')
+    if idx == 0:
+        return 0
+    elif idx == len(curve.index):
+        return curve.iloc[-1]['damage']
+    else:        
+        prev_value, prev_damage = curve.index[idx-1], curve.iloc[idx-1]['damage']
+        next_value, next_damage = curve.index[idx], curve.iloc[idx]['damage']
+        damage = prev_damage + (next_damage - prev_damage) * (value - prev_value) / (next_value - prev_value)
+
+    return damage
 
 DF_SCENARIOS = generate_scenarios()
 print(DF_SCENARIOS)
