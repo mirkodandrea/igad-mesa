@@ -12,7 +12,7 @@ from visualizers.stacked_bar_chart import StackedBarChartModule
 from visualizers.grid_layout import GridLayoutModule
 from visualizers.map_module import MapModulePatched
 from spaces import IGADCell
-from utils import SCENARIOS
+from utils import SCENARIOS, SimulationData
 
 
 def portrayal(element: IGADCell|HouseholdAgent) -> dict|Tuple[float, float, float, float]:
@@ -226,6 +226,7 @@ gridParams = {
     ]
 }
 
+IGAD.simulation_data = SimulationData()
 
 server = mesa.visualization.ModularServer(
     IGAD,

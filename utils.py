@@ -2,6 +2,7 @@ import pandas as pd
 import rasterio as rio
 import numpy as np
 import geopandas as gpd
+from typing import List
 
 from constants import (MATERIAL_STONE_BRICKS, MATERIAL_CONCRETE, MATERIAL_WOOD, MATERIAL_MUD_BRICKS, MATERIAL_INFORMAL_SETTLEMENTS)
 
@@ -164,6 +165,53 @@ def get_damage(value, material):
         damage = prev_damage + (next_damage - prev_damage) * (value - prev_value) / (next_value - prev_value)
 
     return damage
+
+
+class SimulationData(object):
+    def __init__(self):
+        """
+        Load data from population, settlements and flood events.
+        """
+        self.incomes = []
+        self.flood_prones = []
+        self.awarenesses = []
+        self.house_materials = []
+        self.households_size = []
+        self.obstacles_to_movement = []
+        self.fears = []
+        self.positions = []
+        self.villages = []
+
+        villages = BOUNDING_BOXES['village'].unique()
+        for village in villages:
+
+            bounding_boxes = BOUNDING_BOXES.query('village == @village')            
+            for id, bounding_box in bounding_boxes.iterrows():
+                flood_prone = bounding_box.floodprone == 1
+                settlements = ALL_SETTLEMENTS[ALL_SETTLEMENTS.geometry.within(bounding_box.geometry)]
+
+                n_households = len(settlements)
+
+                village_lons = settlements.geometry.centroid.x
+                village_lats = settlements.geometry.centroid.y
+
+                village_flood_prones = [flood_prone] * n_households
+                village_positions = list(zip(village_lons, village_lats))
+                village_data = ALL_POPULATION_DATA\
+                        .query('village == @village')\
+                        .sample(n_households, replace=True)
+
+                self.positions += village_positions
+                self.incomes += village_data['income'].values.tolist()
+                self.flood_prones += village_flood_prones #.tolist()
+                self.awarenesses += village_data['awareness'].values.tolist()
+                self.house_materials += village_data['walls_materials'].values.tolist()
+                self.households_size += village_data['household_size'].values.tolist()
+                self.obstacles_to_movement += village_data['obstacles_to_movement'].values.tolist()
+                self.fears += village_data['fear_of_flood'].tolist()
+                self.villages += [village] * n_households
+
+
 
 DF_SCENARIOS = generate_scenarios()
 #print(DF_SCENARIOS)

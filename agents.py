@@ -103,6 +103,7 @@ class HouseholdAgent(mg.GeoAgent):
     def get_description(self):        
         return {
             'id': self.unique_id,
+            'village': self.village,
             'damage': f"h: {int(100 * self.house_damage)}% - l: {int(100 * self.livelihood_damage)}%",
             'status': self.status, 
             'flood_prone': self.flood_prone,

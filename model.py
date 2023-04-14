@@ -2,20 +2,22 @@
 print("Loading model.py")
 
 
-from typing import List
 from datetime import datetime
+from typing import List
+
 import geopandas as gpd
+import mesa
 import mesa_geo as mg
 import numpy as np
-from numpy.random import random
 import pandas as pd
+from numpy.random import random
 from shapely.geometry import Point
 
-import mesa
-from spaces import IGADSpace
 from agents import (STATUS_DISPLACED, STATUS_EVACUATED, STATUS_NORMAL,
                     STATUS_TRAPPED, HouseholdAgent)
-from utils import get_events, load_population_data, MAPS_BASENAME, DF_SCENARIOS, DF_EVENTS, MAX_YEARS, ALL_POPULATION_DATA, BOUNDING_BOXES, ALL_SETTLEMENTS
+from spaces import IGADSpace
+from utils import (DF_SCENARIOS, MAPS_BASENAME, MAX_YEARS,
+                   SimulationData, get_events)
 
 RAND_POSITION = False
 
@@ -42,9 +44,9 @@ STAGE_LIST = [
     'fix_neighbours_damage',
 ]
         
-
-
 class IGAD(mesa.Model):
+    simulation_data = SimulationData()
+
     """Model class for the IGAD model."""
     def __init__(
         self, 
@@ -119,10 +121,9 @@ class IGAD(mesa.Model):
             f'village_{n}' in kwargs and
             kwargs[f'village_{n}'] == True
         ]
-        self.load_data(villages=active_villages)
 
-        
-        self.agents = []      
+        self.agents = []
+
         # Generate HouseHold Agents
         ac_population = mg.AgentCreator(
             HouseholdAgent,
@@ -130,29 +131,37 @@ class IGAD(mesa.Model):
             crs=self.space.crs,
             agent_kwargs={},
         )       
-        n_agents = len(self.positions)
 
-        for i in range(n_agents):
-            x, y = self.positions[i]
+        data = IGAD.simulation_data
+        for i, village in enumerate(data.villages):
+            if village not in active_villages:
+                continue
+
+            x, y = data.positions[i]
             household = ac_population.create_agent(
                 Point(x, y), 
                 "H" + str(i)
             )
             
             # Assign attributes            
-            household.base_income = self.incomes[i]
-            household.flood_prone = bool(self.flood_prones[i])
-            household.awareness = self.awarenesses[i]
-            household.fear = self.fears[i]
+            household.base_income = data.incomes[i]
+            household.flood_prone = bool(data.flood_prones[i])
+            household.awareness = data.awarenesses[i]
+            household.fear = data.fears[i]
             #household.trust = trusts[i]
             household.trust = trust
-            household.household_size = self.households_size[i]
-            household.house_materials = self.house_materials[i]
-            household.obstacles_to_movement = bool(self.obstacles_to_movement[i])
+            household.household_size = data.households_size[i]
+            household.house_materials = data.house_materials[i]
+            household.village = data.villages[i]
+            household.obstacles_to_movement = bool(data.obstacles_to_movement[i])
 
             self.space.add_agents(household)
             self.schedule.add(household)
             self.agents.append(household)
+
+        # load scenarios
+        start_year, end_year = DF_SCENARIOS.loc[self.scenario, ['start_year', 'end_year']]
+        self.events = get_events(start_year=start_year, end_year=end_year)
 
         self.datacollector.collect(self)
 
@@ -190,53 +199,9 @@ class IGAD(mesa.Model):
                 "perception": lambda agent: agent.perception,
                 "income": lambda agent: agent.income,
                 "displacement_time": lambda agent: agent.displacement_time,
+                "village": lambda agent: agent.village,    
             },
         )
-
-    def load_data(self, villages: List[str]):
-        """
-        Load data from population, settlements and flood events.
-        """
-        start_year, end_year = DF_SCENARIOS.loc[self.scenario, ['start_year', 'end_year']]
-        self.events = get_events(start_year=start_year, end_year=end_year)
-
-        self.incomes = []
-        self.flood_prones = []
-        self.awarenesses = []
-        self.house_materials = []
-        self.households_size = []
-        self.obstacles_to_movement = []
-        self.fears = []
-        self.positions = []
-
-        for village in villages:
-            print('Loading data for village', village)
-
-            bounding_boxes = BOUNDING_BOXES.query('village == @village')            
-            for id, bounding_box in bounding_boxes.iterrows():
-                flood_prone = bounding_box.floodprone == 1
-                settlements = ALL_SETTLEMENTS[ALL_SETTLEMENTS.geometry.within(bounding_box.geometry)]
-
-                n_households = len(settlements)
-
-                village_lons = settlements.geometry.centroid.x
-                village_lats = settlements.geometry.centroid.y
-
-                village_flood_prones = [flood_prone] * n_households
-                village_positions = list(zip(village_lons, village_lats))
-                village_data = ALL_POPULATION_DATA\
-                        .query('village == @village')\
-                        .sample(n_households, replace=True)
-
-                self.positions += village_positions
-                self.incomes += village_data['income'].values.tolist()
-                self.flood_prones += village_flood_prones #.tolist()
-                self.awarenesses += village_data['awareness'].values.tolist()
-                self.house_materials += village_data['walls_materials'].values.tolist()
-                self.households_size += village_data['household_size'].values.tolist()
-                self.obstacles_to_movement += village_data['obstacles_to_movement'].values.tolist()
-                self.fears += village_data['fear_of_flood'].tolist()
-
 
     def __has_floods(self):
         """

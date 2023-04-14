@@ -1,7 +1,7 @@
 #%%
 import mesa
 from model import IGAD, VILLAGES
-from utils import SCENARIOS
+from utils import SCENARIOS, SimulationData
 import numpy as np
 
 # record start time
@@ -35,7 +35,7 @@ results = mesa.batch_run(
     parameters=params,
     iterations=1,
     max_steps=100,
-    number_processes=16,
+    number_processes=1,
     data_collection_period=-1,
     display_progress=True,
 )
