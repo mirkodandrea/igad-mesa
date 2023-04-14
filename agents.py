@@ -311,11 +311,13 @@ class HouseholdAgent(mg.GeoAgent):
             return
 
         self.received_flood = True
-        if self.prepared and flood_value < FLOOD_DAMAGE_THRESHOLD:
-            return
+        # if self.prepared and flood_value < FLOOD_DAMAGE_THRESHOLD:
+        #     return
         
         new_damage = (flood_value / FLOOD_DAMAGE_MAX)
         if self.prepared:
+            # if the household is prepared because of early warning,
+            # the damage is half of the initial damage
             new_damage = new_damage * 0.5
 
         if self.house_materials in [MATERIAL_CONCRETE, MATERIAL_STONE_BRICKS]:

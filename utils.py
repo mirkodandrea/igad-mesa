@@ -1,7 +1,7 @@
 import pandas as pd
 import rasterio as rio
 import numpy as np
-
+import geopandas as gpd
 
 MAPS_BASENAME = 'IGAD/Maps/SD_30mHazardMap'
 
@@ -120,4 +120,10 @@ def load_population_data() -> pd.DataFrame:
     return df
 
 DF_SCENARIOS = generate_scenarios()
-print(DF_SCENARIOS)
+#print(DF_SCENARIOS)
+
+
+ALL_SETTLEMENTS = gpd.read_file('IGAD/settlements_grid_wdst_sampled.gpkg').to_crs(epsg=4326)
+BOUNDING_BOXES = gpd.read_file('IGAD/BoundingBox20022023/BoundingBox_20022023.shp').to_crs(epsg=4326)
+# select only the bounding box of the village
+ALL_POPULATION_DATA = load_population_data()

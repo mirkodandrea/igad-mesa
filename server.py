@@ -39,7 +39,7 @@ def cell_portrayal(cell: IGADCell) -> Tuple[float, float, float, float]:
 
 def households_draw(agent):
     """
-    Portrayal Method for canvas
+    Portrayal Method for Map
     """
     portrayal = dict()
     if not isinstance(agent, HouseholdAgent):
@@ -84,8 +84,6 @@ def households_draw(agent):
 
     portrayal["dashArray"] = f"{house_not_damaged}, {house_damage}, {livelihood_not_damaged}, {livelihood_damage}"
 
-
-    #"Shape": Can be either "circle", "rect", "arrowHead"
     portrayal["description"] = agent.get_description()
 
     return portrayal

@@ -5,13 +5,22 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Current File",
+            "name": "Python: Mesa GUI",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/run.py",
             "console": "integratedTerminal",
             "justMyCode": false,
             "cwd": "${workspaceFolder}/"
-        }
+        },
+                {
+                    "name": "Python: BATCH",
+                    "type": "python",
+                    "request": "launch",
+                    "program": "${workspaceFolder}/batch_run.py",
+                    "console": "integratedTerminal",
+                    "justMyCode": false,
+                    "cwd": "${workspaceFolder}/"
+                }
     ]
 }

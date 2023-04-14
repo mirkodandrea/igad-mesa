@@ -1,3 +1,7 @@
+
+print("Loading model.py")
+
+
 from typing import List
 from datetime import datetime
 import geopandas as gpd
@@ -11,8 +15,7 @@ import mesa
 from spaces import IGADSpace
 from agents import (STATUS_DISPLACED, STATUS_EVACUATED, STATUS_NORMAL,
                     STATUS_TRAPPED, HouseholdAgent)
-from utils import get_events, load_population_data, MAPS_BASENAME, DF_SCENARIOS, DF_EVENTS, MAX_YEARS
-
+from utils import get_events, load_population_data, MAPS_BASENAME, DF_SCENARIOS, DF_EVENTS, MAX_YEARS, ALL_POPULATION_DATA, BOUNDING_BOXES, ALL_SETTLEMENTS
 
 RAND_POSITION = False
 
@@ -40,10 +43,6 @@ STAGE_LIST = [
 ]
         
 
-ALL_SETTLEMENTS = gpd.read_file('IGAD/settlements_grid_wdst_sampled.gpkg').to_crs(epsg=4326)
-BOUNDING_BOXES = gpd.read_file('IGAD/BoundingBox20022023/BoundingBox_20022023.shp').to_crs(epsg=4326)
-# select only the bounding box of the village
-ALL_POPULATION_DATA = load_population_data()
 
 class IGAD(mesa.Model):
     """Model class for the IGAD model."""
@@ -75,6 +74,7 @@ class IGAD(mesa.Model):
         :param **kwargs:   Additional keyword arguments
         """
         super().__init__()
+        self.running = True
 
         self.save_to_csv = save_to_csv
 
@@ -107,7 +107,7 @@ class IGAD(mesa.Model):
         self.false_alarm_rate = false_alarm_rate
         self.false_negative_rate = false_negative_rate
         
-        self.running = False
+
         self.create_datacollector()
         
 
@@ -287,8 +287,8 @@ class IGAD(mesa.Model):
         self.steps += 1
         self.maybe_emit_early_warning()
         self.update_flood()
-        self.schedule.step()
         self.datacollector.collect(self)
+        self.schedule.step()
         
         if self.steps >= MAX_YEARS:
             self.running = False
