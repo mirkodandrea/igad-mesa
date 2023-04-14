@@ -10,7 +10,10 @@ services:
         - USER_ID=${USER_ID:-1000}
         - GROUP_ID=${GROUP_ID:-1000}
         - PACKAGES_FILE=${PACKAGES_FILE:-requirements.txt}
+    image: ${MESA_IMAGE_NAME:-icpac/mesa-abm-model}
+    container_name: ${MESA_CONTR_NAME:-igad-mesa}
     volumes:
       - ${MESA_DATA_DIR:-./IGAD}:${APP_DIR:-/opt/igad-mesa}/IGAD
+      - ${MESA_OUTPUTS_DIR:-./output}:${APP_DIR:-/opt/igad-mesa}/output
     ports:
       - "${HOST_IP:-127.0.0.1}:${HOST_PORT:-8521}:8521"
