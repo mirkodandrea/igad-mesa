@@ -41,10 +41,9 @@ results = mesa.batch_run(
 )
 
 # # %%
-# import pandas as pd
-# results_df = pd.DataFrame(results)
-# print(results_df)
-# %%
+import pandas as pd
+results_df = pd.DataFrame(results)
+results_df.to_csv('results.csv')
 
 # record end time
 end_time = time.time()
