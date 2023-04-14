@@ -79,7 +79,7 @@ class IGAD(mesa.Model):
         self.save_to_csv = save_to_csv
 
         # Set random seed to reset random sequence
-        np.random.seed(0)
+        #np.random.seed(0)
 
         self.scenario = scenario
         self.schedule = mesa.time.StagedActivation(self, 
