@@ -20,7 +20,7 @@ params = dict(
     basic_income_program=[False, True],
     awareness_program=[False, True],
     
-    scenario=[SCENARIOS[0],SCENARIOS[2],SCENARIOS[4]],
+    scenario=[SCENARIOS[0], SCENARIOS[1],SCENARIOS[2], SCENARIOS[3], SCENARIOS[4]],
     village_0=True,
     village_1=True,
     village_2=True,
@@ -36,7 +36,7 @@ results = mesa.batch_run(
     iterations=1,
     max_steps=100,
     number_processes=1,
-    data_collection_period=-1,
+    data_collection_period=1,
     display_progress=True,
 )
 
@@ -49,3 +49,6 @@ results_df.to_csv('results.csv')
 end_time = time.time()
 
 print(f'Elapsed time: {end_time - start_time} seconds')
+
+from analysis import do_analysis
+do_analysis(results_df)

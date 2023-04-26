@@ -9,8 +9,11 @@ from constants import (MATERIAL_STONE_BRICKS, MATERIAL_CONCRETE, MATERIAL_WOOD, 
 MAPS_BASENAME = 'IGAD/Maps/SD_30mHazardMap'
 
 DF_EVENTS = pd.read_csv('IGAD/SD_EventCalendar.csv').query('ReturnPeriod < 273')
-SCENARIOS = ['Low Hazard', 'Medium Hazard', 'High Hazard', 'Very High Hazard', 'Extreme Hazard']
+#SCENARIOS = ['Low Hazard', 'Medium Hazard', 'High Hazard', 'Very High Hazard', 'Extreme Hazard']
+SCENARIOS = [f'scenario_{i+1}' for i in range(10)]
+
 MAX_YEARS = 30
+
 # read curves from file, first columns is the index, second column is the value
 CURVES = {
     'M': pd.read_csv('IGAD/curves/M1.csv', index_col=0, header=None, names=['damage', 'std']),
