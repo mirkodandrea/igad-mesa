@@ -1,26 +1,29 @@
 #%%
-import mesa
-from model import IGAD, VILLAGES
-from utils import SCENARIOS, SimulationData
-import numpy as np
-
 # record start time
 import time
+
+import mesa
+import numpy as np
+import pandas as pd
+
+from analysis import do_analysis
+from graphs import plot_graphs
+from model import EWS_MODES, HOUSE_REPAIR_PROGRAMS_LEVELS, IGAD
+from utils import SCENARIOS
+
 start_time = time.time()
 
-#%%
+ews_modes = list(EWS_MODES.keys())
+hrp_levels = list(HOUSE_REPAIR_PROGRAMS_LEVELS.keys())
+
 params = dict(
-    save_to_csv=False,
-    do_early_warning=[False, True],
-    false_alarm_rate=0.3,
-    false_negative_rate=0.1,
-    trust=0.75,
-    house_repair_program=[0.1, 0.2, 0.3, 0.4, 0.5],
-    house_improvement_program=[False, True],
+    ews_mode=[ews_modes[0]],
+    hrp_level=[hrp_levels[0]],
+    
     basic_income_program=[False, True],
     awareness_program=[False, True],
     
-    scenario=[SCENARIOS[0], SCENARIOS[1],SCENARIOS[2], SCENARIOS[3], SCENARIOS[4]],
+    scenario=[SCENARIOS[0]],
     village_0=True,
     village_1=True,
     village_2=True,
@@ -29,26 +32,23 @@ params = dict(
     village_5=True,
     village_6=True,    
 )
-#%%
 results = mesa.batch_run(
     IGAD,
     parameters=params,
     iterations=1,
-    max_steps=100,
+    max_steps=30,
     number_processes=1,
     data_collection_period=1,
     display_progress=True,
 )
 
-# # %%
-import pandas as pd
+
 results_df = pd.DataFrame(results)
-results_df.to_csv('results.csv')
+results_df.to_csv('results_new.csv')
 
 # record end time
 end_time = time.time()
 
 print(f'Elapsed time: {end_time - start_time} seconds')
-
-from analysis import do_analysis
-do_analysis(results_df)
+analysis_df = do_analysis(results_df)
+plot_graphs(analysis_df)

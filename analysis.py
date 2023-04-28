@@ -62,9 +62,8 @@ def do_analysis(sim_data):
     # %%
     batch_parameters = [
         'scenario',
-        'do_early_warning',
-        'house_repair_program',
-        'house_improvement_program',
+        'ews_mode',
+        'hrp_level',
         'basic_income_program',
         'awareness_program',
     ]
@@ -115,7 +114,8 @@ def do_analysis(sim_data):
     # %%
     analysis_df.to_csv('analysis.csv')
     # %%
+    return analysis_df
 
 if __name__ == '__main__':
-    sim_data = pd.read_csv('data.csv')
+    sim_data = pd.read_csv('results.csv')
     do_analysis(sim_data)   

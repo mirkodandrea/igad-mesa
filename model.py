@@ -19,6 +19,7 @@ from spaces import IGADSpace
 from utils import (DF_SCENARIOS, MAPS_BASENAME, MAX_YEARS,
                    SimulationData, get_events)
 
+SAVE_TO_CSV = False 
 RAND_POSITION = False
 
 VILLAGES = [
@@ -43,20 +44,32 @@ STAGE_LIST = [
     'fix_damage',
     'fix_neighbours_damage',
 ]
-        
+
+EWS_MODES = {
+    'no_ews': dict(do_early_warning=False, false_alarm_rate=None, false_negative_rate=None, trust=0.5),
+    'bad_ews': dict(do_early_warning=True, false_alarm_rate=0.5, false_negative_rate=0.3, trust=0.3),
+    'good_ews': dict(do_early_warning=True, false_alarm_rate=0.3, false_negative_rate=0.1, trust=0.6),
+    'perfect_ews': dict(do_early_warning=True, false_alarm_rate=0.0, false_negative_rate=0.0, trust=0.8),
+}
+
+HOUSE_REPAIR_PROGRAMS_LEVELS = {
+    'hrp_00': dict(house_improvement_program=False, house_repair_program=0.0),
+    'hrp_30': dict(house_improvement_program=False, house_repair_program=0.3),
+    'hrp_60': dict(house_improvement_program=False, house_repair_program=0.6),
+    'hrp_90': dict(house_improvement_program=False, house_repair_program=0.9),
+    'hrp_30_hi': dict(house_improvement_program=True, house_repair_program=0.3),
+    'hrp_60_hi': dict(house_improvement_program=True, house_repair_program=0.6),    
+    'hrp_90_hi': dict(house_improvement_program=True, house_repair_program=0.9),
+}
+       
 class IGAD(mesa.Model):
     simulation_data = SimulationData()
 
     """Model class for the IGAD model."""
     def __init__(
         self, 
-        save_to_csv=None,
-        false_alarm_rate=None,
-        false_negative_rate=None,
-        trust=None,
-        do_early_warning=None,
-        house_repair_program=None,
-        house_improvement_program=None,
+        ews_mode=None,
+        hrp_level=None,
         basic_income_program=None,
         awareness_program=None,
         scenario=None,
@@ -64,12 +77,8 @@ class IGAD(mesa.Model):
     ):
         """
         Create a new IGAD model.
-        :param positions:   List of tuples with the x and y coordinates of each agent
-        :param false_alarm_rate:    False alarm rate for the model
-        :param false_negative_rate: False negative rate for the model
-        :param trust:   Trust value for the model
-        :param house_repair_program: % of repaired houses 
-        :param house_improvement_program: whether the government provides house improvement (e.g. change materials)
+        :param early_warning_mode: Early warning mode
+        :param house_repair_program: House repair program level
         :param basic_income_program: Whether the government provides a basic income or not
         :param awareness_program: Whether the government provides awareness programs or not
         :param scenario:    Scenario to run
@@ -78,7 +87,7 @@ class IGAD(mesa.Model):
         super().__init__()
         self.running = True
 
-        self.save_to_csv = save_to_csv
+        self.save_to_csv = SAVE_TO_CSV
 
         # Set random seed to reset random sequence
         #np.random.seed(0)
@@ -98,17 +107,21 @@ class IGAD(mesa.Model):
         self.emitted_early_warning = False
         self.flood_event = False
 
+        # early warning mode
+        ews_mode_dict = EWS_MODES[ews_mode]
+        self.do_early_warning = ews_mode_dict['do_early_warning']
+        self.false_alarm_rate = ews_mode_dict['false_alarm_rate']
+        self.false_negative_rate = ews_mode_dict['false_negative_rate']
+        self.trust = ews_mode_dict['trust']
+
         # active government programs
-        self.do_early_warning = do_early_warning
-        self.house_repair_program = house_repair_program
+        hrp_dict = HOUSE_REPAIR_PROGRAMS_LEVELS[hrp_level]
+
+        self.house_repair_program = hrp_dict['house_repair_program']
+        self.house_improvement_program = hrp_dict['house_improvement_program']
+
         self.basic_income_program = basic_income_program
-        self.awareness_program = awareness_program
-        self.house_improvement_program = house_improvement_program  
-        
-        # IGAD MODEL PARAMETERS
-        self.false_alarm_rate = false_alarm_rate
-        self.false_negative_rate = false_negative_rate
-        
+        self.awareness_program = awareness_program        
 
         self.create_datacollector()
         
@@ -149,7 +162,7 @@ class IGAD(mesa.Model):
             household.awareness = data.awarenesses[i]
             household.fear = data.fears[i]
             #household.trust = trusts[i]
-            household.trust = trust
+            household.trust = self.trust
             household.household_size = data.households_size[i]
             household.house_materials = data.house_materials[i]
             household.village = data.villages[i]

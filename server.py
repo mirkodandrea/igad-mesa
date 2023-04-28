@@ -6,7 +6,7 @@ import mesa
 from agents import (STATUS_DISPLACED, STATUS_EVACUATED, STATUS_NORMAL,
                     STATUS_TRAPPED, HouseholdAgent)
 from constants import POVERTY_LINE
-from model import IGAD, VILLAGES
+from model import IGAD, VILLAGES, EWS_MODES, HOUSE_REPAIR_PROGRAMS_LEVELS
 
 from visualizers.stacked_bar_chart import StackedBarChartModule
 from visualizers.grid_layout import GridLayoutModule
@@ -89,19 +89,18 @@ def households_draw(agent):
     return portrayal
 
 
+ews_modes = list(EWS_MODES.keys())
+house_repair_programs_levels = list(HOUSE_REPAIR_PROGRAMS_LEVELS.keys())
 
 model_params = dict(
-    save_to_csv=mesa.visualization.Checkbox("Save to CSV", True),
+    #save_to_csv=mesa.visualization.Checkbox("Save to CSV", True),
     
     _separator_1=mesa.visualization.StaticText("_______________________________"),
-    _model_params=mesa.visualization.StaticText("Model Parameters"),    
-    do_early_warning=mesa.visualization.Checkbox("Early Warning", True),
-    false_alarm_rate=mesa.visualization.Slider("False Alarm Rate", 0.3, 0, 1, 0.1),
-    false_negative_rate=mesa.visualization.Slider("False Negative Rate", 0.1, 0, 1, 0.1),
-    trust=mesa.visualization.Slider("Initial authority Trust", 0.75, 0, 1, 0.05),
+    _model_params=mesa.visualization.StaticText("Model Parameters"),
     
-    house_repair_program=mesa.visualization.Slider("House Repair Program", 0.0, 0, 1, 0.1),
-    house_improvement_program=mesa.visualization.Checkbox("House Improve Program", False),
+    ews_mode=mesa.visualization.Choice("EWS Mode", ews_modes[0], ews_modes),
+    hrp_level=mesa.visualization.Choice("House Repair Program Level", house_repair_programs_levels[0], house_repair_programs_levels),
+
     basic_income_program=mesa.visualization.Checkbox("Basic Income Program", False),
     awareness_program=mesa.visualization.Checkbox("Awareness Program", False),
     
