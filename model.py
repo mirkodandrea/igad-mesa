@@ -166,7 +166,13 @@ class IGAD(mesa.Model):
             household.household_size = data.households_size[i]
             household.house_materials = data.house_materials[i]
             household.village = data.villages[i]
-            household.obstacles_to_movement = bool(data.obstacles_to_movement[i])
+
+
+            household.number_of_floods = data.number_of_floods[i]
+            household.vulnerability = data.vulnerability[i]
+            household.livestock = data.livestock[i]
+            household.house = data.house[i]
+            household.cropland = data.cropland[i]
 
             self.space.add_agents(household)
             self.schedule.add(household)

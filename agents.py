@@ -9,6 +9,21 @@ from constants import (FLOOD_DAMAGE_MAX, FLOOD_DAMAGE_THRESHOLD, MAX_DISTANCE,
 from constants import (STATUS_NORMAL, STATUS_EVACUATED, STATUS_DISPLACED, STATUS_TRAPPED)
 from constants import (MATERIAL_STONE_BRICKS, MATERIAL_CONCRETE, MATERIAL_WOOD, MATERIAL_MUD_BRICKS, MATERIAL_INFORMAL_SETTLEMENTS)
 
+CHECK_TRUST = False
+INCOME_COEFFIECIENT = -1
+SQUARE_INCOME_COEFFIECIENT = 0.584
+FLOOD_COEFFIECIENT = -0.32
+VULNERABILITY_COEFFIECIENT = -0.801
+LIVESTOCK_COEFFIECIENT = 0.585
+HOUSE_COEFFIECIENT = -0.619
+CROPLAND_COEFFIECIENT = -0.514
+AL_GAILI_COEFFIECIENT = -0.0651
+AL_SHUHADA_COEFFIECIENT = 0.859
+ELTOMANIAT_COEFFIECIENT = -2
+WAD_RAMLI_COEFFIECIENT = -0.82
+WAWISE_GARB_COEFFIECIENT = -0.798
+WAWISE_OUM_OJAIJA_COEFFIECIENT = 1.906
+
 
 LOW_DAMAGE_THRESHOLD = 0.25
 MEDIUM_DAMAGE_THRESHOLD = 0.70
@@ -33,8 +48,6 @@ class HouseholdAgent(mg.GeoAgent):
         """
         super().__init__(unique_id, model, geometry, crs)
         # Agent parameters
-        self.obstacles_to_movement = False
-
         self.house_damage = 0
         self.livelihood_damage = 0
 
@@ -115,7 +128,6 @@ class HouseholdAgent(mg.GeoAgent):
             'received_flood': self.received_flood,
             'house_materials': self.house_materials,
             'displacement_time': self.displacement_time,
-            'obstacles_to_movement': self.obstacles_to_movement,
             'last_house_damage': f"{int(100 * self.last_house_damage)}%",
             'last_livelihood_damage': f"{int(self.last_livelihood_damage)}%",
         }
@@ -158,6 +170,34 @@ class HouseholdAgent(mg.GeoAgent):
         else:
             self.displacement_time = 0
         
+    def calculate_trapped_probability(self):
+        """
+        """        
+        x = self.income * INCOME_COEFFIECIENT + \
+            self.income * self.income * SQUARE_INCOME_COEFFIECIENT + \
+            min(self.number_of_floods, 2) * FLOOD_COEFFIECIENT + \
+            self.vulnerability * VULNERABILITY_COEFFIECIENT + \
+            self.livestock * LIVESTOCK_COEFFIECIENT + \
+            self.house * HOUSE_COEFFIECIENT + \
+            self.cropland * CROPLAND_COEFFIECIENT
+        
+        if self.village == 'Al-Gaili':
+            x += AL_GAILI_COEFFIECIENT 
+        elif self.village == 'Al-Shuhada':
+            x += AL_SHUHADA_COEFFIECIENT
+        elif self.village == 'Eltomaniat':
+            x += ELTOMANIAT_COEFFIECIENT
+        elif self.village == 'Wad Ramli Camp':
+            x += WAD_RAMLI_COEFFIECIENT
+        elif self.village == 'Wawise Garb':
+            x += WAWISE_GARB_COEFFIECIENT
+        elif self.village == 'Wawise Oum Ojaija':
+            x += WAWISE_OUM_OJAIJA_COEFFIECIENT
+        else:
+            pass
+
+        trapped_probability = np.exp(x) / (1 + np.exp(x))
+        return trapped_probability
 
     def displacement_decision(self):
         """ 
@@ -180,12 +220,11 @@ class HouseholdAgent(mg.GeoAgent):
         if self.perception < 0.5:
             return
     
-        if self.income > POVERTY_LINE and \
-            not self.obstacles_to_movement:
-                self.status = STATUS_DISPLACED
-        else: # poor household or obstacles to movement
+        trapped_probability = self.calculate_trapped_probability()
+        if random() < trapped_probability:
             self.status = STATUS_TRAPPED
-
+        else:
+            self.status = STATUS_DISPLACED
 
     def check_neighbours_for_displacement(self):
         """
@@ -203,8 +242,7 @@ class HouseholdAgent(mg.GeoAgent):
         
         other_statuses = [neighbour.status == STATUS_DISPLACED for neighbour in neighbours]
         if sum(other_statuses) > 0.75 * len(neighbours):
-            if self.income < POVERTY_LINE or \
-                self.obstacles_to_movement:
+            if random() < self.calculate_trapped_probability():
                 self.status = STATUS_TRAPPED
             else:
                 self.status = STATUS_DISPLACED
@@ -232,7 +270,7 @@ class HouseholdAgent(mg.GeoAgent):
 
         self.alerted = True
 
-        if self.trust < 0.5:
+        if self.trust < 0.5 and CHECK_TRUST:
             # distrust the government
             # don't prepare
             return
@@ -244,8 +282,7 @@ class HouseholdAgent(mg.GeoAgent):
             # can't evcauate anyway
             return
         
-        if self.income < POVERTY_LINE \
-            or self.obstacles_to_movement:
+        if self.income < POVERTY_LINE:
             # poor household, cannot afford to move
             return
         
@@ -274,7 +311,7 @@ class HouseholdAgent(mg.GeoAgent):
             other_status = [neighbour.status == STATUS_EVACUATED for neighbour in neighbours]
             if sum(other_status) > 0.5 * len(neighbours):
                 # enough neighbours are evacuated, evacuate myself if income is high enough
-                if self.income >= POVERTY_LINE and not self.obstacles_to_movement:
+                if self.income >= POVERTY_LINE:
                     self.status = STATUS_EVACUATED
     
 
@@ -298,6 +335,7 @@ class HouseholdAgent(mg.GeoAgent):
 
         if flood_value > 0:
             self.received_flood = True
+            self.number_of_floods += 1
 
         # house damage using curve        
         new_damage = get_damage(flood_value, self.house_materials)

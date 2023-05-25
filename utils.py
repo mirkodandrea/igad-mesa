@@ -106,7 +106,6 @@ def load_population_data() -> pd.DataFrame:
         'floods_changed_predictability', 
         'floods_changed_future_frequency',
         'behaviour_affects_flood_impact'
-
     ]
     df['fear_of_flood'] = df['fear_of_flood'] / 3
     df['income'] = df['income'].apply(lambda x: (x + np.random.random())**1.3)
@@ -115,20 +114,20 @@ def load_population_data() -> pd.DataFrame:
     df['awareness'] = df[awareness_columns].mean(axis=1) / 3
     df['awareness'][df['awareness']<0.3] = 0.3
     df['awareness'].fillna(0.5, inplace=True)
-    
-    df['obstacles_to_movement'] = (df[['vulnerabilities', 'properties']].sum(axis=1) > 4) | df['household_size'] > 5
     df['walls_materials'] = df['walls_materials'].apply(lambda m: m.strip())
 
     df =  df[[
         'village',
         'income',
-        'vulnerabilities',
-        'properties',
+        'vulnerability',
+        'livestock',
+        'house',
+        'croplands',
+        'number_of_floods',
         'walls_materials',
         'fear_of_flood',
         'household_size',
         'awareness',
-        'obstacles_to_movement',
     ]]
     df.fillna(0, inplace=True)
     return df
@@ -180,10 +179,15 @@ class SimulationData(object):
         self.awarenesses = []
         self.house_materials = []
         self.households_size = []
-        self.obstacles_to_movement = []
         self.fears = []
         self.positions = []
         self.villages = []
+
+        self.number_of_floods = []
+        self.vulnerability = []
+        self.livestock = []
+        self.house = []
+        self.cropland = []
 
         villages = BOUNDING_BOXES['village'].unique()
         for village in villages:
@@ -210,8 +214,14 @@ class SimulationData(object):
                 self.awarenesses += village_data['awareness'].values.tolist()
                 self.house_materials += village_data['walls_materials'].values.tolist()
                 self.households_size += village_data['household_size'].values.tolist()
-                self.obstacles_to_movement += village_data['obstacles_to_movement'].values.tolist()
+
                 self.fears += village_data['fear_of_flood'].tolist()
+                self.number_of_floods += village_data['number_of_floods'].values.tolist()
+                self.vulnerability += village_data['vulnerability'].values.tolist()
+                self.livestock += village_data['livestock'].values.tolist()
+                self.house += village_data['house'].values.tolist()
+                self.cropland += village_data['croplands'].values.tolist()
+
                 self.villages += [village] * n_households
 
 
