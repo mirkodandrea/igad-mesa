@@ -17,13 +17,13 @@ ews_modes = list(EWS_MODES.keys())
 hrp_levels = list(HOUSE_REPAIR_PROGRAMS_LEVELS.keys())
 
 params = dict(
-    ews_mode=[ews_modes[0]],
-    hrp_level=[hrp_levels[0]],
+    ews_mode=ews_modes,
+    hrp_level=hrp_levels,
     
     basic_income_program=[False, True],
     awareness_program=[False, True],
     
-    scenario=[SCENARIOS[0]],
+    scenario=SCENARIOS,
     village_0=True,
     village_1=True,
     village_2=True,
@@ -44,11 +44,16 @@ results = mesa.batch_run(
 
 
 results_df = pd.DataFrame(results)
-results_df.to_csv('results_new.csv')
+results_df.to_csv('results.csv')
 
 # record end time
 end_time = time.time()
 
 print(f'Elapsed time: {end_time - start_time} seconds')
+
+print('Analysis')
+
 analysis_df = do_analysis(results_df)
+
+print('Plotting graphs')
 plot_graphs(analysis_df)
