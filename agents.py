@@ -9,25 +9,25 @@ from constants import (FLOOD_DAMAGE_MAX, FLOOD_DAMAGE_THRESHOLD, MAX_DISTANCE,
 from constants import (STATUS_NORMAL, STATUS_EVACUATED, STATUS_DISPLACED, STATUS_TRAPPED)
 from constants import (MATERIAL_STONE_BRICKS, MATERIAL_CONCRETE, MATERIAL_WOOD, MATERIAL_MUD_BRICKS, MATERIAL_INFORMAL_SETTLEMENTS)
 
-CHECK_TRUST = False
-INCOME_COEFFIECIENT = -1
-SQUARE_INCOME_COEFFIECIENT = 0.584
-FLOOD_COEFFIECIENT = -0.32
-VULNERABILITY_COEFFIECIENT = -0.801
-LIVESTOCK_COEFFIECIENT = 0.585
-HOUSE_COEFFIECIENT = -0.619
-CROPLAND_COEFFIECIENT = -0.514
-AL_GAILI_COEFFIECIENT = -0.0651
-AL_SHUHADA_COEFFIECIENT = 0.859
-ELTOMANIAT_COEFFIECIENT = -2
-WAD_RAMLI_COEFFIECIENT = -0.82
-WAWISE_GARB_COEFFIECIENT = -0.798
-WAWISE_OUM_OJAIJA_COEFFIECIENT = 1.906
+from constants import (
+    RISK_PERCEPTION_THRESHOLD, LOW_DAMAGE_THRESHOLD, 
+    MEDIUM_DAMAGE_THRESHOLD, BASE_RECOVERY, TRUST_THRESHOLD,
+    TRUST_CHANGE,
+    FEAR_CHANGE_HIGH,
+    FEAR_CHANGE_LOW,
+    AWARENESS_CHANGE_LOW,
+    AWARENESS_CHANGE_HIGH,
+)
 
-
-LOW_DAMAGE_THRESHOLD = 0.25
-MEDIUM_DAMAGE_THRESHOLD = 0.70
-BASE_RICOVERY = 0.30
+from constants import (
+    CHECK_TRUST,INCOME_COEFFIECIENT,
+    SQUARE_INCOME_COEFFIECIENT,FLOOD_COEFFIECIENT,
+    VULNERABILITY_COEFFIECIENT,LIVESTOCK_COEFFIECIENT,
+    HOUSE_COEFFIECIENT,CROPLAND_COEFFIECIENT,
+    AL_GAILI_COEFFIECIENT,AL_SHUHADA_COEFFIECIENT,
+    ELTOMANIAT_COEFFIECIENT,WAD_RAMLI_COEFFIECIENT,
+    WAWISE_GARB_COEFFIECIENT,WAWISE_OUM_OJAIJA_COEFFIECIENT
+)
 
 class HouseholdAgent(mg.GeoAgent):
     """Household Agent."""
@@ -217,7 +217,7 @@ class HouseholdAgent(mg.GeoAgent):
             return      
     
         # in case of medium house damage or medium livelihood damage, check against perception
-        if self.perception < 0.5:
+        if self.perception < RISK_PERCEPTION_THRESHOLD:
             return
     
         trapped_probability = self.calculate_trapped_probability()
@@ -235,7 +235,7 @@ class HouseholdAgent(mg.GeoAgent):
         if self.status != STATUS_NORMAL:
             return
         
-        if self.perception < 0.5:
+        if self.perception < RISK_PERCEPTION_THRESHOLD:
             return 
         
         neighbours = self.get_neighbours()
@@ -270,7 +270,7 @@ class HouseholdAgent(mg.GeoAgent):
 
         self.alerted = True
 
-        if self.trust < 0.5 and CHECK_TRUST:
+        if self.trust < TRUST_THRESHOLD and CHECK_TRUST:
             # distrust the government
             # don't prepare
             return
@@ -287,7 +287,7 @@ class HouseholdAgent(mg.GeoAgent):
             return
         
         # trust the government
-        if self.perception >= 0.5:
+        if self.perception >= RISK_PERCEPTION_THRESHOLD:
             # aware of risk, move before flood
             self.status = STATUS_EVACUATED
 
@@ -370,14 +370,14 @@ class HouseholdAgent(mg.GeoAgent):
         MIN_AWARENESS = 0.5 if self.model.awareness_program else 0.3
         if not anyone_flooded:
             # awareness is reduced by 10% if no one is flooded
-            self.awareness = np.clip(self.awareness - 0.1, MIN_AWARENESS, 1)
+            self.awareness = np.clip(self.awareness - AWARENESS_CHANGE_LOW, MIN_AWARENESS, 1)
 
             # fear is reduced by 10% if no one is flooded
-            self.fear = np.clip(self.fear - 0.1, 0.3, 1)
+            self.fear = np.clip(self.fear - FEAR_CHANGE_LOW, 0.3, 1)
 
             if self.alerted:
                 # trust is reduced by 10% absolute value
-                self.trust = np.clip(self.trust - 0.1, 0, 1)
+                self.trust = np.clip(self.trust - TRUST_CHANGE, 0, 1)
 
 
         else: # anyone flooded
@@ -385,7 +385,7 @@ class HouseholdAgent(mg.GeoAgent):
             max_damage = max(self.last_house_damage, self.last_livelihood_damage)
             if max_damage > LOW_DAMAGE_THRESHOLD:
                 # increase awareness if my damage is over LOW_DAMAGE_THRESHOLD
-                self.awareness = np.clip(self.awareness + 0.4, MIN_AWARENESS, 1)
+                self.awareness = np.clip(self.awareness + AWARENESS_CHANGE_HIGH, MIN_AWARENESS, 1)
             else:
                 # increase awareness if at least 25% of neighbours have damage over LOW_DAMAGE_THRESHOLD
                 neighbours_high_damage = [neighbour.last_house_damage > LOW_DAMAGE_THRESHOLD for neighbour in neighbours]
@@ -394,21 +394,21 @@ class HouseholdAgent(mg.GeoAgent):
                     # [TODO] think about enabling this only if the household is not flooded
 
                     if random() < self.awareness:  # actually increase awareness with probability higher if already aware
-                        self.awareness = np.clip(self.awareness + 0.4, MIN_AWARENESS, 1)
+                        self.awareness = np.clip(self.awareness + AWARENESS_CHANGE_HIGH, MIN_AWARENESS, 1)
                     else: # not aware, decrease awareness because of near-miss-event effect
-                        self.awareness = np.clip(self.awareness - 0.1, MIN_AWARENESS, 1)
+                        self.awareness = np.clip(self.awareness - AWARENESS_CHANGE_LOW, MIN_AWARENESS, 1)
 
             if self.alerted: # flooded and alerted
                 self.trust = 1.0
                 #[TODO] modulate fear increase using damage
-                self.fear = np.clip(self.fear + 0.1, 0, 1)
+                self.fear = np.clip(self.fear + FEAR_CHANGE_LOW, 0, 1)
             else: # flooded but not alerted
                 #[TODO] modulate fear increase using damage
-                self.fear = np.clip(self.fear + 0.2, 0, 1)
+                self.fear = np.clip(self.fear + FEAR_CHANGE_HIGH, 0, 1)
                 
                 #[TODO] modulate trust decrease using damage
                 #[TODO] talk about this!
-                self.trust = np.clip(self.trust - 0.1, 0, 1)
+                self.trust = np.clip(self.trust - TRUST_CHANGE, 0, 1)
 
 
     def fix_damage(self):
@@ -439,7 +439,7 @@ class HouseholdAgent(mg.GeoAgent):
 
         
         # every unit of income above poverty line increases recovery by +10%
-        recovery = BASE_RICOVERY + (self.income - POVERTY_LINE) / 10
+        recovery = BASE_RECOVERY + (self.income - POVERTY_LINE) / 10
 
         if self.house_materials in [MATERIAL_CONCRETE, MATERIAL_STONE_BRICKS]:
             pass
