@@ -19,6 +19,16 @@ from spaces import IGADSpace
 from utils import (DF_SCENARIOS, MAPS_BASENAME, MAX_YEARS,
                    SimulationData, get_events)
 
+from constants import (
+    RISK_PERCEPTION_THRESHOLD, LOW_DAMAGE_THRESHOLD, 
+    HIGH_DAMAGE_THRESHOLD, TRUST_THRESHOLD,
+    TRUST_CHANGE,
+    FEAR_CHANGE,
+    AWARENESS_CHANGE_LOW,
+    AWARENESS_CHANGE_HIGH,
+)
+
+
 SAVE_TO_CSV = False 
 RAND_POSITION = False
 
@@ -123,6 +133,22 @@ class IGAD(mesa.Model):
         self.basic_income_program = basic_income_program
         self.awareness_program = awareness_program        
 
+        # Set model parameters
+        if 'model_parameters' in kwargs:
+            model_parameters = kwargs['model_parameters']
+        else:
+            model_parameters = {}
+
+        self.RISK_PERCEPTION_THRESHOLD =  model_parameters.get('RISK_PERCEPTION_THRESHOLD', RISK_PERCEPTION_THRESHOLD)
+        self.LOW_DAMAGE_THRESHOLD = model_parameters.get('LOW_DAMAGE_THRESHOLD', LOW_DAMAGE_THRESHOLD)
+        self.HIGH_DAMAGE_THRESHOLD = model_parameters.get('HIGH_DAMAGE_THRESHOLD', HIGH_DAMAGE_THRESHOLD)
+        self.TRUST_THRESHOLD = model_parameters.get('TRUST_THRESHOLD', TRUST_THRESHOLD)
+        self.TRUST_CHANGE =  model_parameters.get('TRUST_CHANGE', TRUST_CHANGE)
+        self.FEAR_CHANGE = model_parameters.get('FEAR_CHANGE', FEAR_CHANGE)
+        self.AWARENESS_CHANGE_LOW = model_parameters.get('AWARENESS_CHANGE_LOW', AWARENESS_CHANGE_LOW)
+        self.AWARENESS_CHANGE_HIGH = model_parameters.get('AWARENESS_CHANGE_HIGH', AWARENESS_CHANGE_HIGH)
+
+
         self.create_datacollector()
         
 
@@ -183,6 +209,8 @@ class IGAD(mesa.Model):
         self.events = get_events(start_year=start_year, end_year=end_year)
 
         self.datacollector.collect(self)
+
+
 
     def create_datacollector(self):
         """Create the datacollector."""

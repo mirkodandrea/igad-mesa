@@ -3,31 +3,21 @@ import numpy as np
 from numpy.random import random
 from shapely.geometry import Point
 
+from constants import (AL_GAILI_COEFFIECIENT, AL_SHUHADA_COEFFIECIENT,
+                       CHECK_TRUST, CROPLAND_COEFFIECIENT,
+                       ELTOMANIAT_COEFFIECIENT, FLOOD_COEFFIECIENT,
+                       HOUSE_COEFFIECIENT, INCOME_COEFFIECIENT,
+                       LIVESTOCK_COEFFIECIENT, MATERIAL_CONCRETE,
+                       MATERIAL_INFORMAL_SETTLEMENTS, MATERIAL_MUD_BRICKS,
+                       MATERIAL_STONE_BRICKS, MATERIAL_WOOD, MAX_DISTANCE,
+                       POVERTY_LINE, SQUARE_INCOME_COEFFIECIENT,
+                       STATUS_DISPLACED, STATUS_EVACUATED, STATUS_NORMAL,
+                       STATUS_TRAPPED, VULNERABILITY_COEFFIECIENT,
+                       WAD_RAMLI_COEFFIECIENT, WAWISE_GARB_COEFFIECIENT,
+                       WAWISE_OUM_OJAIJA_COEFFIECIENT,
+                       BASE_RECOVERY)
 from utils import get_damage, get_livelihood_damage
-from constants import (FLOOD_DAMAGE_MAX, FLOOD_DAMAGE_THRESHOLD, MAX_DISTANCE,
-                       POVERTY_LINE)
-from constants import (STATUS_NORMAL, STATUS_EVACUATED, STATUS_DISPLACED, STATUS_TRAPPED)
-from constants import (MATERIAL_STONE_BRICKS, MATERIAL_CONCRETE, MATERIAL_WOOD, MATERIAL_MUD_BRICKS, MATERIAL_INFORMAL_SETTLEMENTS)
 
-from constants import (
-    RISK_PERCEPTION_THRESHOLD, LOW_DAMAGE_THRESHOLD, 
-    MEDIUM_DAMAGE_THRESHOLD, BASE_RECOVERY, TRUST_THRESHOLD,
-    TRUST_CHANGE,
-    FEAR_CHANGE_HIGH,
-    FEAR_CHANGE_LOW,
-    AWARENESS_CHANGE_LOW,
-    AWARENESS_CHANGE_HIGH,
-)
-
-from constants import (
-    CHECK_TRUST,INCOME_COEFFIECIENT,
-    SQUARE_INCOME_COEFFIECIENT,FLOOD_COEFFIECIENT,
-    VULNERABILITY_COEFFIECIENT,LIVESTOCK_COEFFIECIENT,
-    HOUSE_COEFFIECIENT,CROPLAND_COEFFIECIENT,
-    AL_GAILI_COEFFIECIENT,AL_SHUHADA_COEFFIECIENT,
-    ELTOMANIAT_COEFFIECIENT,WAD_RAMLI_COEFFIECIENT,
-    WAWISE_GARB_COEFFIECIENT,WAWISE_OUM_OJAIJA_COEFFIECIENT
-)
 
 class HouseholdAgent(mg.GeoAgent):
     """Household Agent."""
@@ -155,7 +145,7 @@ class HouseholdAgent(mg.GeoAgent):
             return
         
         if self.status == STATUS_EVACUATED:
-            selected_threshold = LOW_DAMAGE_THRESHOLD if self.income < POVERTY_LINE else MEDIUM_DAMAGE_THRESHOLD
+            selected_threshold = self.model.LOW_DAMAGE_THRESHOLD if self.income < POVERTY_LINE else self.model.HIGH_DAMAGE_THRESHOLD
 
             if self.house_damage < selected_threshold:
                 self.status = STATUS_NORMAL
@@ -163,7 +153,7 @@ class HouseholdAgent(mg.GeoAgent):
                 self.status = STATUS_DISPLACED
             
         elif self.status == STATUS_DISPLACED:
-            if self.house_damage < LOW_DAMAGE_THRESHOLD:
+            if self.house_damage < self.model.LOW_DAMAGE_THRESHOLD:
                 self.status = STATUS_NORMAL
 
         if self.status == STATUS_DISPLACED:
@@ -208,17 +198,17 @@ class HouseholdAgent(mg.GeoAgent):
             # already displaced or evacuated
             return
 
-        if self.house_damage > MEDIUM_DAMAGE_THRESHOLD:
-            # or self.livelihood_damage > MEDIUM_DAMAGE_THRESHOLD:
+        if self.house_damage > self.model.HIGH_DAMAGE_THRESHOLD:
+            # or self.livelihood_damage > HIGH_DAMAGE_THRESHOLD:
             self.status = STATUS_DISPLACED
             return
 
-        if self.house_damage < LOW_DAMAGE_THRESHOLD:
+        if self.house_damage < self.model.LOW_DAMAGE_THRESHOLD:
             #and self.livelihood_damage < LOW_DAMAGE_THRESHOLD:
             return      
     
         # in case of medium house damage or medium livelihood damage, check against perception
-        if self.perception < RISK_PERCEPTION_THRESHOLD:
+        if self.perception < self.model.RISK_PERCEPTION_THRESHOLD:
             return
     
         trapped_probability = self.calculate_trapped_probability()
@@ -237,7 +227,7 @@ class HouseholdAgent(mg.GeoAgent):
         if self.status != STATUS_NORMAL:
             return
         
-        if self.perception < RISK_PERCEPTION_THRESHOLD:
+        if self.perception < self.model.RISK_PERCEPTION_THRESHOLD:
             return 
         
         neighbours = self.get_neighbours()
@@ -272,7 +262,7 @@ class HouseholdAgent(mg.GeoAgent):
 
         self.alerted = True
 
-        if self.trust < TRUST_THRESHOLD and CHECK_TRUST:
+        if self.trust < self.model.TRUST_THRESHOLD and CHECK_TRUST:
             # distrust the government
             # don't prepare
             return
@@ -289,7 +279,7 @@ class HouseholdAgent(mg.GeoAgent):
             return
         
         # trust the government
-        if self.perception >= RISK_PERCEPTION_THRESHOLD:
+        if self.perception >= self.model.RISK_PERCEPTION_THRESHOLD:
             # aware of risk, move before flood
             self.status = STATUS_EVACUATED
 
@@ -374,45 +364,45 @@ class HouseholdAgent(mg.GeoAgent):
         MIN_AWARENESS = 0.5 if self.model.awareness_program else 0.3
         if not anyone_flooded:
             # awareness is reduced by 10% if no one is flooded
-            self.awareness = np.clip(self.awareness - AWARENESS_CHANGE_LOW, MIN_AWARENESS, 1)
+            self.awareness = np.clip(self.awareness - self.model.AWARENESS_CHANGE_LOW, MIN_AWARENESS, 1)
 
             # fear is reduced by 10% if no one is flooded
-            self.fear = np.clip(self.fear - FEAR_CHANGE_LOW, 0.3, 1)
+            self.fear = np.clip(self.fear - self.model.FEAR_CHANGE, 0.3, 1)
 
             if self.alerted:
                 # trust is reduced by 10% absolute value
-                self.trust = np.clip(self.trust - TRUST_CHANGE, 0, 1)
+                self.trust = np.clip(self.trust - self.model.TRUST_CHANGE, 0, 1)
 
 
         else: # anyone flooded
             # [TODO] check damage of house and livelihood
             max_damage = max(self.last_house_damage, self.last_livelihood_damage)
-            if max_damage > LOW_DAMAGE_THRESHOLD:
+            if max_damage > self.model.LOW_DAMAGE_THRESHOLD:
                 # increase awareness if my damage is over LOW_DAMAGE_THRESHOLD
-                self.awareness = np.clip(self.awareness + AWARENESS_CHANGE_HIGH, MIN_AWARENESS, 1)
+                self.awareness = np.clip(self.awareness + self.model.AWARENESS_CHANGE_HIGH, MIN_AWARENESS, 1)
             else:
                 # increase awareness if at least 25% of neighbours have damage over LOW_DAMAGE_THRESHOLD
-                neighbours_high_damage = [neighbour.last_house_damage > LOW_DAMAGE_THRESHOLD for neighbour in neighbours]
+                neighbours_high_damage = [neighbour.last_house_damage > self.model.LOW_DAMAGE_THRESHOLD for neighbour in neighbours]
                 if sum(neighbours_high_damage) > 0.25 * len(neighbours):
                     # take into account the near-miss-event effect
                     # [TODO] think about enabling this only if the household is not flooded
 
                     if random() < self.awareness:  # actually increase awareness with probability higher if already aware
-                        self.awareness = np.clip(self.awareness + AWARENESS_CHANGE_HIGH, MIN_AWARENESS, 1)
+                        self.awareness = np.clip(self.awareness + self.model.AWARENESS_CHANGE_HIGH, MIN_AWARENESS, 1)
                     else: # not aware, decrease awareness because of near-miss-event effect
-                        self.awareness = np.clip(self.awareness - AWARENESS_CHANGE_LOW, MIN_AWARENESS, 1)
+                        self.awareness = np.clip(self.awareness - self.model.AWARENESS_CHANGE_LOW, MIN_AWARENESS, 1)
 
             if self.alerted: # flooded and alerted
                 self.trust = 1.0
                 #[TODO] modulate fear increase using damage
-                self.fear = np.clip(self.fear + FEAR_CHANGE_LOW, 0, 1)
+                self.fear = np.clip(self.fear + self.model.FEAR_CHANGE, 0, 1)
             else: # flooded but not alerted
                 #[TODO] modulate fear increase using damage
-                self.fear = np.clip(self.fear + FEAR_CHANGE_HIGH, 0, 1)
+                self.fear = np.clip(self.fear + self.model.FEAR_CHANGE, 0, 1)
                 
                 #[TODO] modulate trust decrease using damage
                 #[TODO] talk about this!
-                self.trust = np.clip(self.trust - TRUST_CHANGE, 0, 1)
+                self.trust = np.clip(self.trust - self.model.TRUST_CHANGE, 0, 1)
 
 
     def fix_damage(self):
@@ -420,8 +410,8 @@ class HouseholdAgent(mg.GeoAgent):
         fix damage for current household
         """
         if self.model.house_repair_program > 0:
-            # if government help is available, try to use it to fix damage if damage is above MEDIUM_DAMAGE_THRESHOLD
-            if self.house_damage > MEDIUM_DAMAGE_THRESHOLD:
+            # if government help is available, try to use it to fix damage if damage is above HIGH_DAMAGE_THRESHOLD
+            if self.house_damage > self.model.HIGH_DAMAGE_THRESHOLD:
                 if random() < self.model.house_repair_program:
                     # government help is used to fix damage 100%
                     self.house_damage = 0
@@ -459,7 +449,7 @@ class HouseholdAgent(mg.GeoAgent):
         household should not be displaced or evacuated
         """
         if  self.income <= POVERTY_LINE or \
-            self.house_damage > LOW_DAMAGE_THRESHOLD or \
+            self.house_damage > self.model.LOW_DAMAGE_THRESHOLD or \
             self.received_flood or \
             self.status not in [STATUS_NORMAL, STATUS_TRAPPED]:
             return
