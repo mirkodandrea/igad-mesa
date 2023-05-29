@@ -144,6 +144,7 @@ class HouseholdAgent(mg.GeoAgent):
         self.status_changed = False
         self.last_house_damage = 0
         self.last_livelihood_damage = 0
+        self.livelihood_damage = 0
 
     
     def return_decision(self):
@@ -207,13 +208,13 @@ class HouseholdAgent(mg.GeoAgent):
             # already displaced or evacuated
             return
 
-        if self.house_damage > MEDIUM_DAMAGE_THRESHOLD or \
-            self.livelihood_damage > MEDIUM_DAMAGE_THRESHOLD:
+        if self.house_damage > MEDIUM_DAMAGE_THRESHOLD:
+            # or self.livelihood_damage > MEDIUM_DAMAGE_THRESHOLD:
             self.status = STATUS_DISPLACED
             return
 
-        if self.house_damage < LOW_DAMAGE_THRESHOLD and \
-            self.livelihood_damage < LOW_DAMAGE_THRESHOLD:
+        if self.house_damage < LOW_DAMAGE_THRESHOLD:
+            #and self.livelihood_damage < LOW_DAMAGE_THRESHOLD:
             return      
     
         # in case of medium house damage or medium livelihood damage, check against perception
@@ -345,7 +346,7 @@ class HouseholdAgent(mg.GeoAgent):
         # livelihood damage isn't affected by preparedness
         new_damage = flood_value / FLOOD_DAMAGE_MAX
         self.last_livelihood_damage = new_damage
-        self.livelihood_damage = np.clip(self.livelihood_damage + new_damage, 0, 1)
+        self.livelihood_damage = np.clip(new_damage, 0, 1)
            
 
     def update_sentiments(self):
@@ -415,9 +416,6 @@ class HouseholdAgent(mg.GeoAgent):
         """
         fix damage for current household
         """
-
-        self.livelihood_damage = np.clip(self.livelihood_damage - 0.3, 0, 1)
-
         if self.model.house_repair_program > 0:
             # if government help is available, try to use it to fix damage if damage is above MEDIUM_DAMAGE_THRESHOLD
             if self.house_damage > MEDIUM_DAMAGE_THRESHOLD:

@@ -2,7 +2,8 @@ import pandas as pd
 import rasterio as rio
 import numpy as np
 import geopandas as gpd
-from typing import List
+from typing import List, Union
+
 
 from constants import (MATERIAL_STONE_BRICKS, MATERIAL_CONCRETE, MATERIAL_WOOD, MATERIAL_MUD_BRICKS, MATERIAL_INFORMAL_SETTLEMENTS)
 
@@ -167,6 +168,29 @@ def get_damage(value, material):
         damage = prev_damage + (next_damage - prev_damage) * (value - prev_value) / (next_value - prev_value)
 
     return damage
+
+def get_livelihood_damage(
+        flood_value: float,
+        livelihood_type: Union['crops','livestock','shop']
+    ):
+    """
+    Returns the damage to livelihoods for a given flood value
+    @param flood_value: flood value in mm
+    @param livelihood_type: livelihood type
+    """
+    if livelihood_type == 'crops':
+        # min damage 10% at 100mm, max damage 100% at 1000m
+        min_flood_value = 100
+        max_flood_value = 1000
+        if flood_value <= min_flood_value:
+            return 0
+        return 0.1 + 0.9 * (flood_value - min_flood_value) / (max_flood_value - min_flood_value)
+    
+    elif livelihood_type == 'livestock':
+        pass
+    elif livelihood_type == 'shop':
+        pass
+    return 0
 
 
 class SimulationData(object):
