@@ -24,8 +24,8 @@ from constants import (
     HIGH_DAMAGE_THRESHOLD, TRUST_THRESHOLD,
     TRUST_CHANGE,
     FEAR_CHANGE,
-    AWARENESS_CHANGE_LOW,
-    AWARENESS_CHANGE_HIGH,
+    AWARENESS_DECREASE,
+    AWARENESS_INCREASE,
 )
 
 
@@ -145,8 +145,8 @@ class IGAD(mesa.Model):
         self.TRUST_THRESHOLD = model_parameters.get('TRUST_THRESHOLD', TRUST_THRESHOLD)
         self.TRUST_CHANGE =  model_parameters.get('TRUST_CHANGE', TRUST_CHANGE)
         self.FEAR_CHANGE = model_parameters.get('FEAR_CHANGE', FEAR_CHANGE)
-        self.AWARENESS_CHANGE_LOW = model_parameters.get('AWARENESS_CHANGE_LOW', AWARENESS_CHANGE_LOW)
-        self.AWARENESS_CHANGE_HIGH = model_parameters.get('AWARENESS_CHANGE_HIGH', AWARENESS_CHANGE_HIGH)
+        self.AWARENESS_DECREASE = model_parameters.get('AWARENESS_DECREASE', AWARENESS_DECREASE)
+        self.AWARENESS_INCREASE = model_parameters.get('AWARENESS_INCREASE', AWARENESS_INCREASE)
 
 
         self.create_datacollector()

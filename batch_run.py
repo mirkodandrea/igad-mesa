@@ -35,7 +35,7 @@ params = dict(
 results = mesa.batch_run(
     IGAD,
     parameters=params,
-    iterations=10,
+    iterations=3,
     max_steps=30,
     number_processes=1,
     data_collection_period=1,

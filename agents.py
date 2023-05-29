@@ -364,7 +364,7 @@ class HouseholdAgent(mg.GeoAgent):
         MIN_AWARENESS = 0.5 if self.model.awareness_program else 0.3
         if not anyone_flooded:
             # awareness is reduced by 10% if no one is flooded
-            self.awareness = np.clip(self.awareness - self.model.AWARENESS_CHANGE_LOW, MIN_AWARENESS, 1)
+            self.awareness = np.clip(self.awareness - self.model.AWARENESS_DECREASE, MIN_AWARENESS, 1)
 
             # fear is reduced by 10% if no one is flooded
             self.fear = np.clip(self.fear - self.model.FEAR_CHANGE, 0.3, 1)
@@ -379,7 +379,7 @@ class HouseholdAgent(mg.GeoAgent):
             max_damage = max(self.last_house_damage, self.last_livelihood_damage)
             if max_damage > self.model.LOW_DAMAGE_THRESHOLD:
                 # increase awareness if my damage is over LOW_DAMAGE_THRESHOLD
-                self.awareness = np.clip(self.awareness + self.model.AWARENESS_CHANGE_HIGH, MIN_AWARENESS, 1)
+                self.awareness = np.clip(self.awareness + self.model.AWARENESS_INCREASE, MIN_AWARENESS, 1)
             else:
                 # increase awareness if at least 25% of neighbours have damage over LOW_DAMAGE_THRESHOLD
                 neighbours_high_damage = [neighbour.last_house_damage > self.model.LOW_DAMAGE_THRESHOLD for neighbour in neighbours]
@@ -388,9 +388,9 @@ class HouseholdAgent(mg.GeoAgent):
                     # [TODO] think about enabling this only if the household is not flooded
 
                     if random() < self.awareness:  # actually increase awareness with probability higher if already aware
-                        self.awareness = np.clip(self.awareness + self.model.AWARENESS_CHANGE_HIGH, MIN_AWARENESS, 1)
+                        self.awareness = np.clip(self.awareness + self.model.AWARENESS_INCREASE, MIN_AWARENESS, 1)
                     else: # not aware, decrease awareness because of near-miss-event effect
-                        self.awareness = np.clip(self.awareness - self.model.AWARENESS_CHANGE_LOW, MIN_AWARENESS, 1)
+                        self.awareness = np.clip(self.awareness - self.model.AWARENESS_DECREASE, MIN_AWARENESS, 1)
 
             if self.alerted: # flooded and alerted
                 self.trust = 1.0

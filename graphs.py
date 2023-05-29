@@ -111,63 +111,63 @@ scenarios = [
 metrics = ['n_trapped', 'n_evacuations', 'n_displacements', 'displaced_at_last_step', 'displacement_time<=2', 'displacement_time<=5', 'displacement_time>5']
 
 # %%
-df_analysis = pd.read_csv('graphs/analysis.csv')
-#def plot_graphs(df_analysis):
-all_graphs = pd.DataFrame()
-for scenario in scenarios:
-    df_scenario = df_analysis.copy()
-    programs = scenario.split('+')
+#df_analysis = pd.read_csv('graphs/analysis.csv')
+def plot_graphs(df_analysis):
+    all_graphs = pd.DataFrame()
+    for scenario in scenarios:
+        df_scenario = df_analysis.copy()
+        programs = scenario.split('+')
 
-    for column, value in baseline.items():
-        if column not in programs:
-            # select only baseline rows for the current column
-            # since it is not part of the scenario
-            df_scenario = df_scenario[df_scenario[column] == value]
+        for column, value in baseline.items():
+            if column not in programs:
+                # select only baseline rows for the current column
+                # since it is not part of the scenario
+                df_scenario = df_scenario[df_scenario[column] == value]
 
-    graph_values = pd.DataFrame()
+        graph_values = pd.DataFrame()
 
-    # get all permutations of possible program values
-    programs_permutations = df_scenario[programs].drop_duplicates().values.tolist()
-    baseline_column_name = None
-    for program_values in programs_permutations:
-        query_str = ' & '.join([f'{program} == {value.__repr__()}' for program, value in zip(programs, program_values)])
+        # get all permutations of possible program values
+        programs_permutations = df_scenario[programs].drop_duplicates().values.tolist()
+        baseline_column_name = None
+        for program_values in programs_permutations:
+            query_str = ' & '.join([f'{program} == {value.__repr__()}' for program, value in zip(programs, program_values)])
 
-        column_names = []
-        for (v, p) in zip(program_values, programs):
-            if type(v) == str:
-                column_names.append(v)
-            elif v:
-                column_names.append(f'{p}')
-            else:
-                column_names.append(f'no_{p}')
+            column_names = []
+            for (v, p) in zip(program_values, programs):
+                if type(v) == str:
+                    column_names.append(v)
+                elif v:
+                    column_names.append(f'{p}')
+                else:
+                    column_names.append(f'no_{p}')
 
-        column_name = '+'.join(column_names)
+            column_name = '+'.join(column_names)
 
-        is_baseline = all(baseline[program] == value for program, value in zip(programs, program_values))
-        if is_baseline:
-            baseline_column_name = column_name
+            is_baseline = all(baseline[program] == value for program, value in zip(programs, program_values))
+            if is_baseline:
+                baseline_column_name = column_name
+            
+            graph_values[column_name] = df_scenario.query(query_str)[metrics].mean()
+
+        graph_values['baseline'] = graph_values[baseline_column_name]
+        #remove baseline column
+        graph_values = graph_values.drop(columns=[baseline_column_name])
+
+        graph_values = graph_values[['baseline'] + [c for c in graph_values if c not in ['baseline']]]
+        plot_bar_graph(graph_values)
+        plt.savefig(f'graphs/{scenario}.png', dpi=300, pad_inches=0.1, bbox_inches='tight')
         
-        graph_values[column_name] = df_scenario.query(query_str)[metrics].mean()
 
-    graph_values['baseline'] = graph_values[baseline_column_name]
-    #remove baseline column
-    graph_values = graph_values.drop(columns=[baseline_column_name])
+        all_graphs = pd.concat([all_graphs, graph_values], axis=1)
+        # remove duplicated columns
 
-    graph_values = graph_values[['baseline'] + [c for c in graph_values if c not in ['baseline']]]
-    plot_bar_graph(graph_values)
-    plt.savefig(f'graphs/{scenario}.png', dpi=300, pad_inches=0.1, bbox_inches='tight')
-    
+    all_graphs = all_graphs.loc[:,~all_graphs.columns.duplicated()]
+    # put baseline column last
+    all_graphs = all_graphs[['baseline'] + [c for c in all_graphs if c not in ['baseline']]]
 
-    all_graphs = pd.concat([all_graphs, graph_values], axis=1)
-    # remove duplicated columns
-
-all_graphs = all_graphs.loc[:,~all_graphs.columns.duplicated()]
-# put baseline column last
-all_graphs = all_graphs[['baseline'] + [c for c in all_graphs if c not in ['baseline']]]
-
-plot_bar_graph(all_graphs, figsize=(15, 40))
-plt.savefig(f'graphs/all.png', dpi=300, pad_inches=0.1, bbox_inches='tight')
+    plot_bar_graph(all_graphs, figsize=(15, 40))
+    plt.savefig(f'graphs/all.png', dpi=300, pad_inches=0.1, bbox_inches='tight')
 
 
 
-# %%
+    # %%
