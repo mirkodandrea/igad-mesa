@@ -3,7 +3,7 @@ import numpy as np
 from numpy.random import random
 from shapely.geometry import Point
 
-from utils import get_damage
+from utils import get_damage, get_livelihood_damage
 from constants import (FLOOD_DAMAGE_MAX, FLOOD_DAMAGE_THRESHOLD, MAX_DISTANCE,
                        POVERTY_LINE)
 from constants import (STATUS_NORMAL, STATUS_EVACUATED, STATUS_DISPLACED, STATUS_TRAPPED)
@@ -227,6 +227,7 @@ class HouseholdAgent(mg.GeoAgent):
         else:
             self.status = STATUS_DISPLACED
 
+
     def check_neighbours_for_displacement(self):
         """
         update displacement decision based on neighbours
@@ -344,7 +345,9 @@ class HouseholdAgent(mg.GeoAgent):
         self.house_damage = max(self.house_damage, new_damage)
 
         # livelihood damage isn't affected by preparedness
-        new_damage = flood_value / FLOOD_DAMAGE_MAX
+        new_damage = get_livelihood_damage(flood_value, 'crops')
+
+
         self.last_livelihood_damage = new_damage
         self.livelihood_damage = np.clip(new_damage, 0, 1)
            
