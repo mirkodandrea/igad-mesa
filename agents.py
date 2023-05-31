@@ -40,7 +40,7 @@ class HouseholdAgent(mg.GeoAgent):
         # Agent parameters
         self.house_damage = 0
         self.livelihood_damage = 0
-
+        
         # set initial status
         self._status = STATUS_NORMAL
         # keep track of status changes from normal
@@ -56,6 +56,8 @@ class HouseholdAgent(mg.GeoAgent):
         self.displacement_time = 0
 
         self._neighbours = None
+
+        self.trapped_probability = 0.0
 
     def get_neighbours(self):
         """
@@ -144,9 +146,12 @@ class HouseholdAgent(mg.GeoAgent):
         """
         if self.status in [STATUS_NORMAL, STATUS_TRAPPED]:
             return
-        
+
+
         if self.status == STATUS_EVACUATED:
-            selected_threshold = self.model.LOW_DAMAGE_THRESHOLD if self.income < POVERTY_LINE else self.model.HIGH_DAMAGE_THRESHOLD
+            selected_threshold = self.model.LOW_DAMAGE_THRESHOLD \
+                                    if self.income < POVERTY_LINE \
+                                    else self.model.HIGH_DAMAGE_THRESHOLD
 
             if self.house_damage < selected_threshold:
                 self.status = STATUS_NORMAL
@@ -154,7 +159,7 @@ class HouseholdAgent(mg.GeoAgent):
                 self.status = STATUS_DISPLACED
             
         elif self.status == STATUS_DISPLACED:
-            if self.house_damage < self.model.LOW_DAMAGE_THRESHOLD:
+            if self.house_damage < self.model.HIGH_DAMAGE_THRESHOLD:
                 self.status = STATUS_NORMAL
 
         if self.status == STATUS_DISPLACED:
@@ -162,7 +167,7 @@ class HouseholdAgent(mg.GeoAgent):
         else:
             self.displacement_time = 0
         
-    def calculate_trapped_probability(self):
+    def update_trapped_probability(self):
         """
         """        
         x = self.income * INCOME_COEFFIECIENT + \
@@ -188,8 +193,8 @@ class HouseholdAgent(mg.GeoAgent):
         else:
             pass
 
-        trapped_probability = np.exp(x) / (1 + np.exp(x))
-        return trapped_probability
+        self.trapped_probability = np.exp(x) / (1 + np.exp(x))
+        
 
     def displacement_decision(self):
         """ 
@@ -209,8 +214,8 @@ class HouseholdAgent(mg.GeoAgent):
                 return
         
         # high house damage -> calculate trapped probability
-        trapped_probability = self.calculate_trapped_probability()
-        if random() < trapped_probability:
+        
+        if random() < self.trapped_probability:
             # household is trapped, cannot move
             self.status = STATUS_TRAPPED
         else:
@@ -234,7 +239,7 @@ class HouseholdAgent(mg.GeoAgent):
         
         other_statuses = [neighbour.status == STATUS_DISPLACED for neighbour in neighbours]
         if sum(other_statuses) > 0.75 * len(neighbours):
-            if random() < self.calculate_trapped_probability():
+            if random() < self.trapped_probability:
                 self.status = STATUS_TRAPPED
             else:
                 self.status = STATUS_DISPLACED

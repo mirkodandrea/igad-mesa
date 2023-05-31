@@ -43,8 +43,8 @@ VILLAGES = [
 ]
 
 STAGE_LIST = [
+    'update_trapped_probability',
     'reset_flags',
-    'return_decision',
     'check_for_early_warning', 
     'check_neighbours_for_evacuation',
     'react_to_flood',
@@ -53,6 +53,7 @@ STAGE_LIST = [
     'update_sentiments',
     'fix_damage',
     'fix_neighbours_damage',
+    'return_decision',
 ]
 
 EWS_MODES = {
