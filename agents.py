@@ -201,23 +201,22 @@ class HouseholdAgent(mg.GeoAgent):
             # already displaced or evacuated
             return
 
-        if self.house_damage > self.model.HIGH_DAMAGE_THRESHOLD:
-            # or self.livelihood_damage > HIGH_DAMAGE_THRESHOLD:
-            self.status = STATUS_DISPLACED
-            return
-
         if self.house_damage < self.model.LOW_DAMAGE_THRESHOLD:
-            #and self.livelihood_damage < LOW_DAMAGE_THRESHOLD:
-            return      
-    
-        # in case of medium house damage or medium livelihood damage, check against perception
-        if self.perception < self.model.RISK_PERCEPTION_THRESHOLD:
-            return
-    
+            # low damage to the house -> return without changing status
+            return 
+        
+        if self.house_damage < self.model.HIGH_DAMAGE_THRESHOLD:
+            # medium house damage -> check against perception
+            if self.perception < self.model.RISK_PERCEPTION_THRESHOLD:
+                return
+        
+        # high house damage -> calculate trapped probability
         trapped_probability = self.calculate_trapped_probability()
         if random() < trapped_probability:
+            # household is trapped, cannot move
             self.status = STATUS_TRAPPED
         else:
+            # household displace
             self.status = STATUS_DISPLACED
 
 
@@ -310,10 +309,10 @@ class HouseholdAgent(mg.GeoAgent):
                     self.status = STATUS_EVACUATED
     
 
-        other_prepared = [neighbour.prepared for neighbour in neighbours]
-        if sum(other_prepared) > 0.5 * len(neighbours):
-            # enough neighbours are prepared, prepare myself
-            self.prepared = True
+        # other_prepared = [neighbour.prepared for neighbour in neighbours]
+        # if sum(other_prepared) > 0.5 * len(neighbours):
+        #     # enough neighbours are prepared, prepare myself
+        #     self.prepared = True
 
 
     def react_to_flood(self):
