@@ -71,7 +71,10 @@ class HouseholdAgent(mg.GeoAgent):
 
     @property
     def perception(self):
-        return self.awareness * self.fear
+        """
+        perception of flood risk
+        """
+        return (self.awareness + self.fear)/2.0
     
     @property
     def income(self):
