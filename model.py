@@ -43,7 +43,7 @@ VILLAGES = [
 ]
 
 STAGE_LIST = [
-    'init_step', 
+    'reset_flags',
     'return_decision',
     'check_for_early_warning', 
     'check_neighbours_for_evacuation',

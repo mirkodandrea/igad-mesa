@@ -70,10 +70,6 @@ def households_draw(agent):
     if agent.income < POVERTY_LINE:
         agent_radius = 5.0
 
-    # if agent.prepared:
-    #     portrayal['weight'] = 3.0
-    # else:
-    #     portrayal['weight'] = 1.0
 
     portrayal["radius"] = agent_radius
     half_circle_length = agent_radius * np.pi

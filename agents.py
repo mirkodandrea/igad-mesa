@@ -52,8 +52,7 @@ class HouseholdAgent(mg.GeoAgent):
         self.received_flood = False
         self.last_house_damage = 0
         self.last_livelihood_damage = 0
-        # prepared to flood
-        self.prepared = False
+
         self.displacement_time = 0
 
         self._neighbours = None
@@ -126,13 +125,12 @@ class HouseholdAgent(mg.GeoAgent):
         }
    
 
-    def init_step(self):
+    def reset_flags(self):
         """
         set household status for each step to initial values        
         """
         # set all flags back to False
         self.alerted = False
-        self.prepared = False
         self.received_flood = False
         self.status_changed = False
         self.last_house_damage = 0
@@ -247,8 +245,6 @@ class HouseholdAgent(mg.GeoAgent):
         check if governemnt has issued early warning
         - if household is already evacuated, do nothing
         - if household doesn't trust the government, then do nothing
-        - if household has not perception of risk, prepare
-        - if household has perception of risk, evacuate and prepare
         """
         if not self.model.emitted_early_warning:
             return 
@@ -266,11 +262,8 @@ class HouseholdAgent(mg.GeoAgent):
 
         if self.trust < self.model.TRUST_THRESHOLD and CHECK_TRUST:
             # distrust the government
-            # don't prepare
             return
 
-        # prepare for flood anyway
-        self.prepared = True
         
         if self.status == STATUS_TRAPPED:
             # can't evcauate anyway
@@ -289,7 +282,6 @@ class HouseholdAgent(mg.GeoAgent):
     def check_neighbours_for_evacuation(self):
         """check neighbours for early warning reaction
         - if enough neighbours are evacuated, then evacuate
-        - if enough neighbours are prepared, then prepare
         """
         if not self.model.emitted_early_warning:
             return 
@@ -308,12 +300,6 @@ class HouseholdAgent(mg.GeoAgent):
                 if self.income >= POVERTY_LINE:
                     self.status = STATUS_EVACUATED
     
-
-        # other_prepared = [neighbour.prepared for neighbour in neighbours]
-        # if sum(other_prepared) > 0.5 * len(neighbours):
-        #     # enough neighbours are prepared, prepare myself
-        #     self.prepared = True
-
 
     def react_to_flood(self):
         """react to flood
@@ -336,7 +322,7 @@ class HouseholdAgent(mg.GeoAgent):
         self.last_house_damage = new_damage
         self.house_damage = max(self.house_damage, new_damage)
 
-        # livelihood damage isn't affected by preparedness
+        # livelihood damage using curve
         new_damage = get_livelihood_damage(flood_value, 'crops')
 
 
