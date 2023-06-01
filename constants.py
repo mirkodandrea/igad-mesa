@@ -41,6 +41,11 @@ WAWISE_OUM_OJAIJA_COEFFIECIENT = 1.906
 
 BASE_RECOVERY = 0.30
 
+# threshold used to decide whether to 
+# increase awareness or not when checking for 
+# neighbours damage
+NEIGHBOURS_HIGH_DAMAGE_FRACTION = 0.25
+
 TRUST_THRESHOLD = 0.5
 RISK_PERCEPTION_THRESHOLD = 0.5
 LOW_DAMAGE_THRESHOLD = 0.25

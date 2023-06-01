@@ -26,6 +26,7 @@ from constants import (
     FEAR_CHANGE,
     AWARENESS_DECREASE,
     AWARENESS_INCREASE,
+    NEIGHBOURS_HIGH_DAMAGE_FRACTION
 )
 
 
@@ -46,10 +47,10 @@ STAGE_LIST = [
     'update_trapped_probability',
     'reset_flags',
     'check_for_early_warning', 
-    'check_neighbours_for_evacuation',
+    # 'check_neighbours_for_evacuation',
     'react_to_flood',
     'displacement_decision',
-    'check_neighbours_for_displacement',
+    # 'check_neighbours_for_displacement',
     'update_sentiments',
     'fix_damage',
     'fix_neighbours_damage',
@@ -148,7 +149,7 @@ class IGAD(mesa.Model):
         self.FEAR_CHANGE = model_parameters.get('FEAR_CHANGE', FEAR_CHANGE)
         self.AWARENESS_DECREASE = model_parameters.get('AWARENESS_DECREASE', AWARENESS_DECREASE)
         self.AWARENESS_INCREASE = model_parameters.get('AWARENESS_INCREASE', AWARENESS_INCREASE)
-
+        self.NEIGHBOURS_HIGH_DAMAGE_FRACTION = model_parameters.get('NEIGHBOURS_HIGH_DAMAGE_FRACTION', NEIGHBOURS_HIGH_DAMAGE_FRACTION)
 
         self.create_datacollector()
         
