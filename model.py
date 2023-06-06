@@ -45,6 +45,7 @@ VILLAGES = [
 
 STAGE_LIST = [
     'update_trapped_probability',
+    'return_decision',
     'reset_flags',
     'check_for_early_warning', 
     # 'check_neighbours_for_evacuation',
@@ -54,7 +55,7 @@ STAGE_LIST = [
     'update_sentiments',
     'fix_damage',
     'fix_neighbours_damage',
-    'return_decision',
+    
 ]
 
 EWS_MODES = {
@@ -275,10 +276,9 @@ class IGAD(mesa.Model):
         else:
             emit = self.random.random() <= self.false_alarm_rate
         
-        if not emit:
-            return 
-
-        print('Early warning at time step', self.steps)
+        if emit:
+            print('Early warning at time step', self.steps)
+            
         self.emitted_early_warning = emit            
 
             

@@ -156,7 +156,10 @@ class HouseholdAgent(mg.GeoAgent):
             if self.house_damage < selected_threshold:
                 self.status = STATUS_NORMAL
             else:
-                self.status = STATUS_DISPLACED
+                if random() < self.trapped_probability:
+                    self.status = STATUS_TRAPPED
+                else:
+                    self.status = STATUS_DISPLACED
             
         elif self.status == STATUS_DISPLACED:
             if self.house_damage < self.model.HIGH_DAMAGE_THRESHOLD:
