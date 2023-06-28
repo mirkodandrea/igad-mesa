@@ -1,5 +1,5 @@
 #%%
-# record start time
+
 import time
 
 import mesa
@@ -10,8 +10,28 @@ from analysis import do_analysis
 from graphs import plot_graphs
 from model import EWS_MODES, HOUSE_REPAIR_PROGRAMS_LEVELS, IGAD
 from utils import SCENARIOS
-
+#%%
+# record start time
 start_time = time.time()
+#%%
+sensitivity_params = pd.read_excel('sensitivity/X.xlsx', index_col=0)
+sensitivity_params = sensitivity_params.rename(columns={
+    'RP': 'RISK_PERCEPTION_THRESHOLD',
+    'Low_D': 'LOW_DAMAGE_THRESHOLD',
+    'High_D': 'HIGH_DAMAGE_THRESHOLD',
+    'Trust': 'TRUST_CHANGE',
+    'Fear': 'FEAR_CHANGE',
+    'Awareness_inc': 'AWARENESS_INCREASE',
+    'Awareness_dec': 'AWARENESS_DECREASE',
+    'Fix_D_Neighbours': 'FIX_DAMAGE_NEIGHBOURS',
+    'Fix_D_Conc': 'FIX_DAMAGE_CONCRETE',
+    'Fix_D_Mud': 'FIX_DAMAGE_MUDBRICK',
+    'Informal_settlement': 'FIX_DAMAGE_INFORMAL_SETTLEMENT',
+})
+
+model_parameters = [r.to_dict() for idx, r in sensitivity_params.iterrows()]
+
+#%%
 
 ews_modes = list(EWS_MODES.keys())
 hrp_levels = list(HOUSE_REPAIR_PROGRAMS_LEVELS.keys())
@@ -29,23 +49,7 @@ params = dict(
     village_4=False,
     village_5=False,
     village_6=False,
-    model_parameters=[
-        dict(),
-        dict(RISK_PERCEPTION_THRESHOLD=0.6),
-        dict(RISK_PERCEPTION_THRESHOLD=0.4),
-        dict(LOW_DAMAGE_THRESHOLD=0.2),
-        dict(LOW_DAMAGE_THRESHOLD=0.3),
-        dict(HIGH_DAMAGE_THRESHOLD=0.48),
-        dict(HIGH_DAMAGE_THRESHOLD=0.72),
-        dict(TRUST_CHANGE=0.08),
-        dict(TRUST_CHANGE=0.12),
-        dict(FEAR_CHANGE=0.08),
-        dict(FEAR_CHANGE=0.12),
-        dict(AWARENESS_INCREASE=0.32),
-        dict(AWARENESS_INCREASE=0.48),
-        dict(AWARENESS_DECREASE=0.08),
-        dict(AWARENESS_DECREASE=0.12),
-    ]
+    model_parameters=model_parameters
 )
 results = mesa.batch_run(
     IGAD,

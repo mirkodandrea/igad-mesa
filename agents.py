@@ -428,14 +428,14 @@ class HouseholdAgent(mg.GeoAgent):
 
         
         # every unit of income above poverty line increases recovery by +10%
-        recovery = BASE_RECOVERY + (self.income - POVERTY_LINE) / 10
+        # recovery = BASE_RECOVERY + (self.income - POVERTY_LINE) / 10
 
         if self.house_materials in [MATERIAL_CONCRETE, MATERIAL_STONE_BRICKS]:
-            pass
+            recovery = self.model.FIX_DAMAGE_CONCRETE
         elif self.house_materials in [MATERIAL_MUD_BRICKS, MATERIAL_WOOD]:
-            recovery *= 1.5
+            recovery = self.model.FIX_DAMAGE_MUDBRICK
         elif self.house_materials == MATERIAL_INFORMAL_SETTLEMENTS:
-            recovery *= 2.0
+            recovery = self.model.FIX_DAMAGE_INFORMAL_SETTLEMENT
 
         self.house_damage = np.clip(self.house_damage - recovery, 0, 1)
 
@@ -457,7 +457,7 @@ class HouseholdAgent(mg.GeoAgent):
         # help other household to fix damage
         for neighbour in neighbours:
             if neighbour.house_damage > 0:
-                neighbour.house_damage = np.clip(neighbour.house_damage - 0.05, 0, 1)
+                neighbour.house_damage = np.clip(neighbour.house_damage - self.model.FIX_DAMAGE_NEIGHBOURS, 0, 1)
    
 
 
