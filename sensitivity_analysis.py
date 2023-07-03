@@ -39,7 +39,7 @@ ews_modes = list(EWS_MODES.keys())
 hrp_levels = list(HOUSE_REPAIR_PROGRAMS_LEVELS.keys())
 
 
-for batch in range(318, 5000):
+for batch in range(1042, 5000):
     params = dict(
         ews_mode='bad_ews',
         hrp_level='hrp_00',
@@ -60,7 +60,7 @@ for batch in range(318, 5000):
         parameters=params,
         iterations=1,
         max_steps=30,
-        number_processes=32,
+        number_processes=80,
         data_collection_period=1,
         display_progress=True,
     )
