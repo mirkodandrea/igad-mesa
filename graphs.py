@@ -111,7 +111,7 @@ scenarios = [
 metrics = ['n_trapped', 'n_evacuations', 'n_displacements', 'displaced_at_last_step', 'displacement_time<=2', 'displacement_time<=5', 'displacement_time>5']
 
 # %%
-#df_analysis = pd.read_csv('graphs/analysis.csv')
+
 def plot_graphs(df_analysis):
     all_graphs = pd.DataFrame()
     for scenario in scenarios:
@@ -156,6 +156,7 @@ def plot_graphs(df_analysis):
         graph_values = graph_values[['baseline'] + [c for c in graph_values if c not in ['baseline']]]
         plot_bar_graph(graph_values)
         plt.savefig(f'graphs/{scenario}.png', dpi=300, pad_inches=0.1, bbox_inches='tight')
+        graph_values.to_csv(f'graphs/{scenario}.csv')
         
 
         all_graphs = pd.concat([all_graphs, graph_values], axis=1)
@@ -167,7 +168,9 @@ def plot_graphs(df_analysis):
 
     plot_bar_graph(all_graphs, figsize=(15, 40))
     plt.savefig(f'graphs/all.png', dpi=300, pad_inches=0.1, bbox_inches='tight')
-
+    graph_values.to_csv(f'graphs/all.csv')
 
 
     # %%
+df_analysis = pd.read_csv('graphs/analysis.csv')
+plot_graphs(df_analysis)
