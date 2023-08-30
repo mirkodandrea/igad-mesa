@@ -103,7 +103,8 @@ scenarios = [
     'basic_income_program', 
     'hrp_level', 
     'ews_mode', 
-    'basic_income_program+hrp_level', 
+    'hrp_level+basic_income_program', 
+    'ews_mode+basic_income_program',
     'ews_mode+awareness_program',
     'ews_mode+hrp_level',
 ]

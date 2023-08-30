@@ -100,27 +100,37 @@ def get_events(start_year, end_year):
 
 
 def load_population_data() -> pd.DataFrame:
-    df = pd.read_excel('IGAD/population_data.xlsx')
-    awareness_columns = [
-        'floods_changed_frequency', 
-        'floods_changed_intensity', 
-        'floods_changed_predictability', 
-        'floods_changed_future_frequency',
-        'behaviour_affects_flood_impact'
-    ]
+    df = pd.read_excel('IGAD/population_data_20230830.xlsx', sheet_name='Filled')
+
+    df = df.rename(columns={
+        'Village': 'village',
+        'House_mat': 'walls_materials',
+        'HH_size': 'household_size',
+        'HH_income': 'income',
+        'Own_house': 'house',
+        'Own_crops': 'croplands',
+        'Own_cattle': 'livestock',
+        'N_floods': 'number_of_floods',
+        'Fear_floods': 'fear_of_flood',
+    })
+    
+
+    awareness_columns = ['PR_FL_freq', 'PR_FL_int', 'PR_FL_pred', 'PR_FL_future', 'PR_riskFlood', 'PR_riskDispl']
+
     df['fear_of_flood'] = df['fear_of_flood'] / 3
-    df['income'] = df['income'].apply(lambda x: (x + np.random.random())**1.3)
+    df['income'] = df['income'].where(df['income'] > 0.5, 0.5)
+    df['health_issues'] = df['Chr_illness'] | df['Disability']
+
     # remove U from awareness columns
     df[awareness_columns] = df[awareness_columns].replace('U', np.NaN)
     df['awareness'] = df[awareness_columns].mean(axis=1) / 3
-    df['awareness'][df['awareness']<0.3] = 0.3
+    df['awareness'] = df['awareness'].where(df['awareness'] > 0.3, 0.3)
     df['awareness'].fillna(0.5, inplace=True)
     df['walls_materials'] = df['walls_materials'].apply(lambda m: m.strip())
 
     df =  df[[
         'village',
         'income',
-        'vulnerability',
         'livestock',
         'house',
         'croplands',
@@ -129,6 +139,7 @@ def load_population_data() -> pd.DataFrame:
         'fear_of_flood',
         'household_size',
         'awareness',
+        'health_issues'
     ]]
     df.fillna(0, inplace=True)
     return df
@@ -208,7 +219,7 @@ class SimulationData(object):
         self.villages = []
 
         self.number_of_floods = []
-        self.vulnerability = []
+        self.health_issues = []
         self.livestock = []
         self.house = []
         self.cropland = []
@@ -241,7 +252,7 @@ class SimulationData(object):
 
                 self.fears += village_data['fear_of_flood'].tolist()
                 self.number_of_floods += village_data['number_of_floods'].values.tolist()
-                self.vulnerability += village_data['vulnerability'].values.tolist()
+                self.health_issues += village_data['health_issues'].values.tolist()
                 self.livestock += village_data['livestock'].values.tolist()
                 self.house += village_data['house'].values.tolist()
                 self.cropland += village_data['croplands'].values.tolist()

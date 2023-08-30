@@ -204,10 +204,9 @@ class IGAD(mesa.Model):
             household.household_size = data.households_size[i]
             household.house_materials = data.house_materials[i]
             household.village = data.villages[i]
-
-
+            
             household.number_of_floods = data.number_of_floods[i]
-            household.vulnerability = data.vulnerability[i]
+            household.health_issues = data.health_issues[i]
             household.livestock = data.livestock[i]
             household.house = data.house[i]
             household.cropland = data.cropland[i]
@@ -237,7 +236,7 @@ class IGAD(mesa.Model):
                 "mean_livelihood_damage": lambda this: np.mean([a.livelihood_damage for a in this.agents]) * 100,
                 "mean_trust": lambda this: np.mean([a.trust for a in this.agents]) * 100,
                 "mean_perception": lambda this: np.mean([a.perception for a in this.agents]) * 100,
-                "mean_income": lambda this: np.mean([a.income for a in this.agents]) * 100,
+                "mean_income": lambda this: np.mean([a.income for a in this.agents]),
                 "mean_awareness": lambda this: np.mean([a.awareness for a in this.agents]) * 100,
                 "mean_fear": lambda this: np.mean([a.fear for a in this.agents]) * 100,
                 "displaced_lte_2": lambda this: sum([1 <= a.displacement_time <= 2  for a in this.agents]),

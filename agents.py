@@ -4,18 +4,17 @@ from numpy.random import random
 from shapely.geometry import Point
 
 from constants import (AL_GAILI_COEFFIECIENT, AL_SHUHADA_COEFFIECIENT,
-                       CHECK_TRUST, CROPLAND_COEFFIECIENT,
-                       ELTOMANIAT_COEFFIECIENT, FLOOD_COEFFIECIENT,
-                       HOUSE_COEFFIECIENT, INCOME_COEFFIECIENT,
-                       LIVESTOCK_COEFFIECIENT, MATERIAL_CONCRETE,
-                       MATERIAL_INFORMAL_SETTLEMENTS, MATERIAL_MUD_BRICKS,
-                       MATERIAL_STONE_BRICKS, MATERIAL_WOOD, MAX_DISTANCE,
-                       POVERTY_LINE, SQUARE_INCOME_COEFFIECIENT,
-                       STATUS_DISPLACED, STATUS_EVACUATED, STATUS_NORMAL,
-                       STATUS_TRAPPED, VULNERABILITY_COEFFIECIENT,
-                       WAD_RAMLI_COEFFIECIENT, WAWISE_GARB_COEFFIECIENT,
-                       WAWISE_OUM_OJAIJA_COEFFIECIENT,
-                       BASE_RECOVERY)
+                       BASE_RECOVERY, CHECK_TRUST, ELTOMANIAT_COEFFIECIENT,
+                       HEALTH_COEFFIECIENT, LN_INCOME_COEFFIECIENT,
+                       MATERIAL_CONCRETE, MATERIAL_INFORMAL_SETTLEMENTS,
+                       MATERIAL_MUD_BRICKS, MATERIAL_STONE_BRICKS,
+                       MATERIAL_WOOD, MAX_DISTANCE, OWN_CATTLES_COEFFIECIENT,
+                       OWN_CROPS_COEFFIECIENT, OWN_HOUSE_COEFFIECIENT,
+                       POVERTY_LINE, STATUS_DISPLACED, STATUS_EVACUATED,
+                       STATUS_NORMAL, STATUS_TRAPPED, WAD_RAMLI_COEFFIECIENT,
+                       WAWISE_GARB_COEFFIECIENT,
+                       WAWISE_OUM_OJAIJA_COEFFIECIENT)
+
 from utils import get_damage, get_livelihood_damage
 
 
@@ -114,7 +113,7 @@ class HouseholdAgent(mg.GeoAgent):
             'damage': f"h: {int(100 * self.house_damage)}% - l: {int(100 * self.livelihood_damage)}%",
             'status': self.status, 
             'flood_prone': self.flood_prone,
-            'income': f"{self.income:.2f}", 
+            'income': f"{self.income:.0f}", 
             'awareness': f"{int(100 * self.awareness)}%", 
             'fear': f"{int(100 * self.fear)}%", 
             'perception': f"{int(100 * self.perception)}%",
@@ -172,29 +171,32 @@ class HouseholdAgent(mg.GeoAgent):
         
     def update_trapped_probability(self):
         """
+        implements 
+        P = exp(b0 + b1*x1 + b2*x2 + ... + bn*xn) / (1 + exp(b0 + b1*x1 + b2*x2 + ... + bn*xn))
+        where x1, x2, ... xn are the independent variables and b0, b1, ... bn are the coefficients
         """        
-        x = self.income * INCOME_COEFFIECIENT + \
-            self.income * self.income * SQUARE_INCOME_COEFFIECIENT + \
-            min(self.number_of_floods, 2) * FLOOD_COEFFIECIENT + \
-            self.vulnerability * VULNERABILITY_COEFFIECIENT + \
-            self.livestock * LIVESTOCK_COEFFIECIENT + \
-            self.house * HOUSE_COEFFIECIENT + \
-            self.cropland * CROPLAND_COEFFIECIENT
-        
+        B0 = 0
         if self.village == 'Al-Gaili':
-            x += AL_GAILI_COEFFIECIENT 
+            B0 = AL_GAILI_COEFFIECIENT 
         elif self.village == 'Al-Shuhada':
-            x += AL_SHUHADA_COEFFIECIENT
+            B0 = AL_SHUHADA_COEFFIECIENT
         elif self.village == 'Eltomaniat':
-            x += ELTOMANIAT_COEFFIECIENT
+            B0 = ELTOMANIAT_COEFFIECIENT
         elif self.village == 'Wad Ramli Camp':
-            x += WAD_RAMLI_COEFFIECIENT
+            B0 = WAD_RAMLI_COEFFIECIENT
         elif self.village == 'Wawise Garb':
-            x += WAWISE_GARB_COEFFIECIENT
+            B0 = WAWISE_GARB_COEFFIECIENT
         elif self.village == 'Wawise Oum Ojaija':
-            x += WAWISE_OUM_OJAIJA_COEFFIECIENT
-        else:
-            pass
+            B0 = WAWISE_OUM_OJAIJA_COEFFIECIENT
+
+        log_income = np.log10(max(self.income, 0.5))
+        x = B0 + \
+            log_income * LN_INCOME_COEFFIECIENT + \
+            self.health_issues * HEALTH_COEFFIECIENT + \
+            self.livestock * OWN_CATTLES_COEFFIECIENT + \
+            self.house * OWN_HOUSE_COEFFIECIENT + \
+            self.cropland * OWN_CROPS_COEFFIECIENT
+        
 
         self.trapped_probability = np.exp(x) / (1 + np.exp(x))
         
