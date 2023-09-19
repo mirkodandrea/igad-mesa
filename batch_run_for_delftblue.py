@@ -1,7 +1,3 @@
-#%%
-# record start time
-import time
-
 import mesa
 import pandas as pd
 from analysis import do_analysis

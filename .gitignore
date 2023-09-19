@@ -1,6 +1,6 @@
 data.tgz
 _sensitivity
-sensitivity/*
+sensitivity/**
 graphs
 analysis.csv
 results.csv
