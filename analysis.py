@@ -112,7 +112,7 @@ def do_analysis(sim_data):
 
 
     # %%
-    analysis_df.to_csv('graphs/analysis.csv')
+    # analysis_df.to_csv('graphs/analysis.csv')
     # %%
     return analysis_df
 

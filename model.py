@@ -283,10 +283,7 @@ class IGAD(mesa.Model):
             emit = not self.random.random() <= self.false_negative_rate 
         else:
             emit = self.random.random() <= self.false_alarm_rate
-        
-        if emit:
-            print('Early warning at time step', self.steps)
-            
+                   
         self.emitted_early_warning = emit            
 
             

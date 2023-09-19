@@ -38,8 +38,14 @@ model_parameters = [r.to_dict() for idx, r in sensitivity_params.iterrows()]
 ews_modes = list(EWS_MODES.keys())
 hrp_levels = list(HOUSE_REPAIR_PROGRAMS_LEVELS.keys())
 
+from concurrent.futures import ProcessPoolExecutor
+num_threads = 1
 
-for batch in range(1042, 5000):
+
+
+for batch in range(4884, 5000):
+    print(f'Batch {batch+1}')
+    start_run_time = time.time()
     params = dict(
         ews_mode='bad_ews',
         hrp_level='hrp_00',
@@ -60,18 +66,32 @@ for batch in range(1042, 5000):
         parameters=params,
         iterations=1,
         max_steps=30,
-        number_processes=80,
+        number_processes=70,
         data_collection_period=1,
-        display_progress=True,
+        display_progress=False,
     )
 
+    end_run_time = time.time()
 
     results_df = pd.DataFrame(results)
-    # set multindex: ['RunId', 'iteration', 'Step', 'AgentID']
-    results_df = results_df.set_index(['RunId', 'iteration', 'Step', 'AgentID'])
-    analysis_df = process_batch(results_df)
-    analysis_df.to_csv(f'sensitivity/analysis_batch_{batch+1}.csv')
     
+    results_df = results_df.set_index(['RunId', 'iteration', 'Step', 'AgentID'])
+    #results_df.to_csv(f'sensitivity/analysis_batch_{batch+1}_raw.csv')
+    print(f'Batch {batch+1} Run completed in {end_run_time - start_run_time} seconds')
+    # set multindex: ['RunId', 'iteration', 'Step', 'AgentID']   
+    with ProcessPoolExecutor(max_workers=num_threads) as executor:
+        analysis_df = process_batch(executor, results_df)
+        analysis_df.to_csv(f'sensitivity/analysis_batch_{batch+1}.csv')
+
+    end_analysis_time = time.time()
+    print(f'Batch {batch+1} Analysis completed in {end_analysis_time - end_run_time} seconds')
+    
+    elapsed_time = time.time() - start_run_time
+    print(f'Batch {batch+1} Elapsed time: {elapsed_time} seconds')
+    # calculate estimated time left in hours
+    if batch > 0:        
+        estimated_time_left = elapsed_time * (5000 - batch)
+        print(f'Estimated time left: {estimated_time_left / 3600} hours')
 
 
 # #%%

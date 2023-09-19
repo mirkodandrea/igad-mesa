@@ -1,12 +1,13 @@
-IGAD.tgz
+data.tgz
 _sensitivity
+sensitivity/*
 graphs
 analysis.csv
 results.csv
 output/*.csv
 preprocessing
 IGAD
-
+backup
 
 # Created by https://www.toptal.com/developers/gitignore/api/macos,windows,linux,python
 # Edit at https://www.toptal.com/developers/gitignore?templates=macos,windows,linux,python
@@ -255,3 +256,4 @@ $RECYCLE.BIN/
 *.lnk
 
 # End of https://www.toptal.com/developers/gitignore/api/macos,windows,linux,python
+sensitivity/analysis_batch_1_raw.csv
