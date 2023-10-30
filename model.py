@@ -48,15 +48,15 @@ VILLAGES = [
 ]
 
 STAGE_LIST = [
-    'update_trapped_probability',
+    # 'update_trapped_probability',
     'return_decision',
     'reset_flags',
-    'check_for_early_warning', 
+    # 'check_for_early_warning', 
     # 'check_neighbours_for_evacuation',
     'react_to_flood',
     'displacement_decision',
     # 'check_neighbours_for_displacement',
-    'update_sentiments',
+    # 'update_sentiments',
     'fix_damage',
     'fix_neighbours_damage',
     
