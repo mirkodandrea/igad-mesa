@@ -90,6 +90,7 @@ class IGAD(mesa.Model):
         basic_income_program=None,
         awareness_program=None,
         scenario=None,
+        switch_household_features_off=False,
         **kwargs
     ):
         """
@@ -139,6 +140,8 @@ class IGAD(mesa.Model):
 
         self.basic_income_program = basic_income_program
         self.awareness_program = awareness_program        
+
+        self.switch_household_features_off = switch_household_features_off
 
         # Set model parameters
         if 'model_parameters' in kwargs:

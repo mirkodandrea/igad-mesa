@@ -93,6 +93,8 @@ model_params = dict(
     
     _separator_1=mesa.visualization.StaticText("_______________________________"),
     _model_params=mesa.visualization.StaticText("Model Parameters"),
+
+    switch_household_features_off=mesa.visualization.Checkbox("No Household Features", False),
     
     ews_mode=mesa.visualization.Choice("EWS Mode", ews_modes[0], ews_modes),
     hrp_level=mesa.visualization.Choice("House Repair Program Level", house_repair_programs_levels[0], house_repair_programs_levels),

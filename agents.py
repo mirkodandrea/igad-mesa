@@ -215,12 +215,14 @@ class HouseholdAgent(mg.GeoAgent):
         
         if self.house_damage < self.model.HIGH_DAMAGE_THRESHOLD:
             # medium house damage -> check against perception
-            if self.perception < self.model.RISK_PERCEPTION_THRESHOLD:
+            if self.perception < self.model.RISK_PERCEPTION_THRESHOLD and \
+                not self.model.switch_household_features_off:
                 return
         
-        # high house damage -> calculate trapped probability
         
-        if random() < self.trapped_probability:
+        # high house damage -> calculate trapped probability        
+        if not self.model.switch_household_features_off and \
+            random() < self.trapped_probability:
             # household is trapped, cannot move
             self.status = STATUS_TRAPPED
         else:
