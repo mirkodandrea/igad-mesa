@@ -51,7 +51,7 @@ from analysis import do_analysis
 from model import EWS_MODES, HOUSE_REPAIR_PROGRAMS_LEVELS, IGAD
 from utils import SCENARIOS
 
-N_PROCESSES = 100
+N_PROCESSES = 25
 N_BATCHES = 5000
 
 ews_modes = list(EWS_MODES.keys())
@@ -89,6 +89,6 @@ for batch in range(0, N_BATCHES):
     results_df = pd.DataFrame(results)
     # results_df.to_csv('results.csv')
     analysis_df = do_analysis(results_df)
-    analysis_df.to_csv(f'batch/analysis_{batch+1}.csv')
+    analysis_df.to_csv(f'batch/baseline_analysis_{batch+1}.csv')
     
 

@@ -26,13 +26,9 @@ CURVES = {
 
 def generate_scenarios():
     """
-    Generate groups of events of max 50 years, based on the return period and the number of events
+    Generate groups of events of max 30 years, based on the return period and the number of events
     Returns a dataframe of 5 event groups with the following columns:
     start_year, end_year, max_return_period, sum_return_period, n_events
-    the event groups are defined as follows:
-    - Low Hazard: lowest ranking group
-    - Medium Hazard, High Hazard, Very High Hazard: middle ranking groups
-    - Extreme Hazard: maximium ranking group
     """
     # iterate rows
     groups = []
