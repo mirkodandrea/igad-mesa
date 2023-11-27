@@ -246,6 +246,10 @@ class IGAD(mesa.Model):
                 "displaced_lte_5": lambda this: sum([2 < a.displacement_time <= 5 for a in this.agents]),
                 "displaced_gt_5": lambda this: sum([ a.displacement_time > 5 for a in this.agents]),
 
+
+                "n_flooded_households": lambda this: sum([a.received_flood for a in this.agents]),
+                "affected_population_households": lambda this: sum([a.received_flood and a.status in [STATUS_NORMAL, STATUS_TRAPPED] for a in this.agents]),
+
                 "n_flooded": lambda this: sum([a.household_size for a in this.agents if a.received_flood]),
                 "affected_population": lambda this: sum([a.household_size for a in this.agents if a.received_flood and a.status in [STATUS_NORMAL, STATUS_TRAPPED]]),
 
