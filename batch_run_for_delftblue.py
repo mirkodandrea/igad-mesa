@@ -4,8 +4,8 @@ from analysis import do_analysis
 from model import EWS_MODES, HOUSE_REPAIR_PROGRAMS_LEVELS, IGAD
 from utils import SCENARIOS
 
-N_PROCESSES = 100
-N_BATCHES = 5000
+N_PROCESSES = 25
+N_BATCHES = 500
 
 ews_modes = list(EWS_MODES.keys())
 hrp_levels = list(HOUSE_REPAIR_PROGRAMS_LEVELS.keys())
