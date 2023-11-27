@@ -189,7 +189,7 @@ class HouseholdAgent(mg.GeoAgent):
         elif self.village == 'Wawise Oum Ojaija':
             B0 = WAWISE_OUM_OJAIJA_COEFFIECIENT
 
-        log_income = np.log10(max(self.income, 0.5))
+        log_income = np.log(max(self.income, 0.5))
         x = B0 + \
             log_income * LN_INCOME_COEFFIECIENT + \
             self.health_issues * HEALTH_COEFFIECIENT + \
